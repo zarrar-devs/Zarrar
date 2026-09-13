@@ -1,0 +1,261 @@
+/* Preloader.css
+   Same token names as Hero's inline <style> (--paper/--ink/--red/--blue/
+   --gold/--font) so the two never drift apart visually. If you keep your
+   palette in a global stylesheet instead, delete this block and let it
+   inherit from there — everything below only reads the custom properties.
+*/
+
+/* Reserve the scrollbar's gutter permanently, in plain CSS, so the page
+   going from non-scrollable (overflow: hidden, during load) to
+   scrollable can never itself cause a width/reflow shift.
+
+   This is deliberately NOT done via JS (e.g.
+   document.documentElement.style.scrollbarGutter = "stable" inside
+   Preloader's effect) for two reasons:
+     1. Timing — a JS-set style only applies after React mounts and the
+        effect runs; a plain CSS rule applies from the very first
+        stylesheet parse, before anything else.
+     2. Correctness — scrollbar-gutter only has any effect on a box
+        whose own `overflow` is something other than `visible`. html's
+        default is `visible`; setting scrollbar-gutter on it alone,
+        without also giving it a non-visible overflow, can silently do
+        nothing in some engines. `overflow-y: scroll` is the actual
+        old-school reliable fix (always reserves the gutter, full stop);
+        `scrollbar-gutter: stable` is layered on top for engines that
+        support it, so short pages that don't need to scroll don't show
+        a permanently-visible scrollbar track. */
+html {
+  overflow-y: scroll;
+}
+@supports (scrollbar-gutter: stable) {
+  html {
+    overflow-y: auto;
+    scrollbar-gutter: stable;
+  }
+}
+
+.preloader__bg,
+.preloader__panel {
+  --paper: #fcfbf8;
+  --ink: #14141c;
+  --ink-soft: #57575f;
+  --line: rgba(20, 20, 28, 0.14);
+  --red: #e6432f;
+  --blue: #2a44ff;
+  --gold: #c98d00;
+  --bg: var(--paper);
+  --font: var(--font-space-grotesk), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+}
+
+.preloader__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 900;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+/* faint grain on the dark dip only — keeps the flat #0a0a0a from
+   looking like a plain color swatch without touching the palette */
+.preloader__bg::after {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  opacity: 0;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  mix-blend-mode: overlay;
+  transition: opacity 0.5s ease;
+}
+.preloader__bg.is-dark::after {
+  opacity: 0.05;
+}
+
+.preloader__panel {
+  position: fixed;
+  inset: 0;
+  z-index: 902;
+  transform-origin: 50% 50%;
+  pointer-events: none; /* the mask (below) owns hit-testing, not this */
+}
+
+.preloader__mask {
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  overflow: hidden;
+  pointer-events: auto; /* blocks clicks to the real page while visible;
+                            stops blocking the instant it's display:none */
+}
+
+.preloader__frame {
+  position: fixed;
+  z-index: 901;
+  pointer-events: none;
+  top: 6vh;
+  left: 6vw;
+  right: 6vw;
+  bottom: 6vh;
+  border: 1px dashed rgba(252, 251, 248, 0.25);
+}
+
+/* ---------- skeleton stage — mirrors Hero's real layout 1:1 ---------- */
+.stage {
+  position: absolute;
+  inset: 0;
+  padding: 28px clamp(20px, 4vw, 56px) 64px;
+  font-family: var(--font);
+}
+.sk {
+  background: rgba(20, 20, 28, 0.08);
+  border-radius: 4px;
+}
+.sk-nav-row {
+  display: flex;
+  align-items: center;
+  padding-bottom: 22px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: clamp(48px, 9vw, 96px);
+}
+.sk--nav {
+  width: 92px;
+  height: 15px;
+}
+.sk--menu {
+  width: 30px;
+  height: 15px;
+  margin-left: auto;
+}
+.sk-headline-block {
+  margin-top: 6px;
+}
+.sk--headline {
+  height: clamp(2.75rem, 6.4vw, 5.4rem);
+  border-radius: 6px;
+  margin-bottom: 18px;
+}
+.sk--headline.w1 {
+  width: 82%;
+}
+.sk--headline.w2 {
+  width: 58%;
+  margin-bottom: 0;
+}
+.sk--sub {
+  height: 14px;
+  margin-top: 14px;
+}
+.sk--sub.w1 {
+  width: 60%;
+  margin-top: 24px;
+}
+.sk--sub.w2 {
+  width: 42%;
+}
+.sk-actions {
+  display: flex;
+  gap: 26px;
+  align-items: center;
+  margin-top: 34px;
+}
+.sk--pill {
+  width: 150px;
+  height: 48px;
+  border-radius: 999px;
+}
+.sk--linkbar {
+  width: 110px;
+  height: 14px;
+}
+
+/* ---------- loading chrome ---------- */
+.preloader__chrome {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-family: var(--font);
+  color: var(--ink);
+}
+.preloader__label {
+  position: absolute;
+  left: clamp(20px, 4vw, 56px);
+  bottom: 56px;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+}
+.preloader__counter {
+  position: absolute;
+  bottom: 40px;
+  white-space: nowrap;
+  font-size: clamp(3rem, 9vw, 7rem);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums; /* prevents digit-width jitter
+    without swapping to a monospace face */
+}
+.preloader__progress {
+  position: absolute;
+  left: clamp(20px, 4vw, 56px);
+  right: clamp(20px, 4vw, 56px);
+  bottom: 32px;
+  height: 1px;
+  background: var(--line);
+}
+.preloader__progress i {
+  display: block;
+  height: 100%;
+  width: 100%;
+  background: var(--ink);
+  transform: scaleX(0);
+  transform-origin: left;
+  font-style: normal;
+}
+
+/* ---------- custom cursor (desktop, fine-pointer only — see JS gate) --- */
+.cursor-dot,
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 1000;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.cursor-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--ink, #14141c);
+}
+.cursor-ring {
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--ink, #14141c);
+  opacity: 0.5;
+  transition: width 0.25s ease, height 0.25s ease, opacity 0.25s ease,
+    border-color 0.25s ease;
+}
+.cursor-ring.is-active {
+  width: 56px;
+  height: 56px;
+  opacity: 0.9;
+  border-color: var(--blue, #2a44ff);
+}
+@media (hover: none), (pointer: coarse) {
+  .cursor-dot,
+  .cursor-ring {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preloader__bg,
+  .preloader__panel,
+  .preloader__frame,
+  .cursor-dot,
+  .cursor-ring {
+    display: none !important;
+  }
+}

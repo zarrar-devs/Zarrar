@@ -1,0 +1,808 @@
+/*
+  Tokens are scoped to this file on purpose. If your project already
+  defines brand fonts as CSS variables globally (e.g. in globals.css),
+  swap the font-family stacks below for those variables so this section
+  matches the rest of the site exactly.
+
+  --color-accent is the single "punch" color the scroll journey snaps
+  through (white -> black -> accent -> black). Swap it for your brand
+  color.
+  --font-serif is used only for the pull-quote; point it at a loaded
+  premium editorial serif (Playfair Display, Canela, GT Sectra) via
+  next/font if you have one.
+  --font-sans centralizes the grotesk stack used for headings/labels/UI
+  across all three stages so it only has to be swapped in one place. It's
+  set to "Plus Jakarta Sans" below via @import as a drop-in upgrade over
+  the plain system stack — swap this @import + font-family for next/font
+  if you want it self-hosted (better perf, no network round trip / no
+  flash-of-fallback-font on first load).
+  --font-display is a separate token used ONLY by the big Stage 1
+  statement, so that one line gets its own editorial voice (Bricolage
+  Grotesque — a variable font, hence the fractional 650 weight below)
+  without dragging every label/button on the page along with it. If you
+  add real "he sees this everywhere" character to your brand type later,
+  this is the variable to point at your display face.
+*/
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
+
+.section {
+  position: relative;
+  width: 100%;
+  --color-ink: #0a0a0a;
+  --color-accent: #C0FF4A;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Bricolage Grotesque", "Plus Jakarta Sans", "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace,
+    SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* =======================================================================
+  Stage 1 — statement + client stories
+
+  A centered, oversized statement (running bold text with small inline
+  "chip" icons standing in for the four disciplines) sits above a
+  draggable row of client-story cards. Color here is driven entirely by
+  --stage1-* custom properties rather than hardcoded values, so the JS
+  only has to tween one set of variables to flip the whole stage between
+  its light (resting) and dark (scrolled-to) states — see
+  WhyChooseUs.jsx. The values below are the dark state, which is also
+  what non-JS / reduced-motion visitors see, since that's this section's
+  final resting look once the rest of the page has scrolled past it.
+  ======================================================================= */
+
+.stage1 {
+  position: relative;
+  overflow: hidden;
+  --stage1-bg: #0a0a0a;
+  --stage1-fg: #ffffff;
+  --stage1-fg-muted: rgba(255, 255, 255, 0.78);
+  --stage1-fg-soft: rgba(255, 255, 255, 0.68);
+  --stage1-border: rgba(255, 255, 255, 0.14);
+  --stage1-border-soft: rgba(255, 255, 255, 0.1);
+  background-color: var(--stage1-bg);
+  color: var(--stage1-fg);
+  padding: clamp(96px, 15vw, 160px) clamp(20px, 6vw, 96px)
+    clamp(64px, 10vw, 120px);
+}
+
+@media (min-width: 861px) {
+  .stage1 {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+  }
+}
+
+.stage1Content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* Wraps the kicker + statement together — used only as the color-snap
+  trigger point in the JS (fires when THIS block is centered, instead of
+  the much taller section below it). No visual styling of its own. */
+.hero {
+  position: relative;
+}
+
+/* Small eyebrow line above the statement. */
+.kicker {
+  margin: 0 auto clamp(18px, 2.6vw, 24px);
+  max-width: 46ch;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: clamp(0.9rem, 1.15vw, 1.02rem);
+  line-height: 1.5;
+  color: var(--stage1-fg-soft);
+}
+
+/* The big running statement, set in --font-display at a fractional 650
+  weight — a variable font gives a deliberate in-between weight instead
+  of defaulting to the nearest static 600/700/800 cut. Built from plain
+  text plus inline .chip icons (see STATEMENT_TOKENS / Chip in the JS).
+  Every word (and every word+chip unit) is its own masked span so it can
+  be revealed word-by-word on scroll — see .wordMask / .word, shared
+  with the Stage 2 quote below. */
+.statement {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 650;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+  font-size: clamp(1.5rem, 3vw, 2.6rem);
+  color: var(--stage1-fg);
+}
+
+/* Glues a discipline name to its chip so the two always wrap as one
+  unit — without this, the chip could land alone at the start of the
+  next line, orphaned from the word it's illustrating. */
+.chipGroup {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: 0.18em;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 0.4em;
+  color: #0a0a0a;
+  vertical-align: -0.22em;
+  box-shadow: inset 0 0 0 1px rgba(10, 10, 10, 0.08);
+}
+
+.chip svg {
+  width: 56%;
+  height: 56%;
+}
+
+/* ---------- Client stories carousel ---------- */
+
+.storiesSection {
+  margin-top: clamp(56px, 8vw, 100px);
+}
+
+/* Label + manual controls share a row now instead of the label sitting
+  alone — the controls (prev/next/pause) are what make the carousel
+  usable without a mouse (touch and keyboard visitors previously had no
+  way to step it at all; see storiesControls below). */
+.storiesHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: clamp(20px, 3vw, 28px);
+}
+
+.storiesLabel {
+  display: block;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--stage1-fg-soft);
+}
+
+.storiesControls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Hidden with prefers-reduced-motion since the effect they control (the
+  auto-scrolling tween) is never created in that case — see the JS
+  guard. Leaving them visible but non-functional would be worse than
+  not showing them. */
+@media (prefers-reduced-motion: reduce) {
+  .storiesControls {
+    display: none;
+  }
+}
+
+.storiesControlButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 1px solid var(--stage1-border);
+  background-color: transparent;
+  color: var(--stage1-fg);
+  cursor: pointer;
+  transition: background-color 0.25s ease, color 0.25s ease,
+    border-color 0.25s ease, transform 0.2s ease;
+}
+
+.storiesControlButton svg {
+  width: 15px;
+  height: 15px;
+}
+
+.storiesControlButton:hover {
+  background-color: var(--stage1-fg);
+  border-color: var(--stage1-fg);
+  color: var(--stage1-bg);
+}
+
+.storiesControlButton:active {
+  transform: scale(0.92);
+}
+
+.storiesControlButton:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.storiesCarousel {
+  position: relative;
+}
+
+/* Not a native horizontally-scrollable box — the track drives itself
+  with a continuous GSAP loop (see WhyChooseUs.jsx), so this is just a
+  clipping window. The mask-image fades both edges to a soft
+  blur-to-transparent instead of a hard clip, so a card drifting across
+  the boundary reads as an intentional "stream" rather than a card
+  getting chopped in half. */
+.storiesViewport {
+  position: relative;
+  overflow: hidden;
+  margin: 0 -4px;
+  padding: 4px 0;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent 0%,
+    #000 8%,
+    #000 92%,
+    transparent 100%
+  );
+}
+
+/* The native pointer is swapped for the round .storiesCursor below —
+  mouse-only, same (hover: hover) + (pointer: fine) guard used
+  elsewhere so touch devices never get a phantom cursor. */
+@media (hover: hover) and (pointer: fine) {
+  .storiesViewport {
+    cursor: none;
+  }
+}
+
+/* Outer flex row holding the two duplicated groups back-to-back — see
+  .storiesTrackGroup. Moving this exactly xPercent(-50) loops
+  seamlessly, same trick as .marqueeTrack in Stage 3, just applied to
+  cards instead of text. */
+.storiesTrack {
+  display: flex;
+  width: max-content;
+  gap: clamp(16px, 2vw, 24px);
+  will-change: transform;
+}
+
+/* One full, non-duplicated set of story cards. Two of these sit side by
+  side inside .storiesTrack (the second is aria-hidden — see the JSX)
+  so the loop has no visible seam. */
+.storiesTrackGroup {
+  display: flex;
+  flex-shrink: 0;
+  gap: clamp(16px, 2vw, 24px);
+}
+
+/* Card gets its own lift + shadow on hover. Auto-scroll comes to a full
+  stop while any card (other than one already in the exit-fade zone) is
+  hovered/focused, or while the pause control is toggled on — see the
+  carousel effect in the JS. */
+.storyCard {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  width: clamp(260px, 30vw, 380px);
+  min-height: 280px;
+  border-radius: 20px;
+  overflow: hidden;
+  background-color: #ECE7DC;
+  user-select: none;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.storyCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px -16px rgba(10, 10, 10, 0.4);
+}
+
+/* flex: 1 (rather than height: 100%) so this reliably stretches to the
+  card's full height even though the card's own height comes from
+  min-height rather than an explicit height — percentage heights don't
+  resolve against min-height, but flex-stretch does. */
+.storyCardText {
+  position: relative;
+  z-index: 3;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(20px, 2.4vw, 26px);
+  color: #14120f;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+
+/* Decorative quote mark — a quiet paper-texture detail rather than a
+  second accent moment, so it doesn't compete with the lime accent used
+  everywhere else on the page (that's spent on the Stage 2 panel and the
+  photo caption below, deliberately not here too). */
+.storyQuoteMark {
+  display: block;
+  width: 30px;
+  height: 22px;
+  color: rgba(20, 18, 15, 0.16);
+}
+
+.storyCardHeading {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.storyHandle {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+
+.storyRole {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.8rem;
+  color: rgba(20, 18, 15, 0.55);
+}
+
+.storyQuote {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(20, 18, 15, 0.75);
+}
+
+.storyMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(20, 18, 15, 0.12);
+}
+
+.storyStars {
+  display: inline-flex;
+  gap: 2px;
+  color: #14120f;
+}
+
+.storyStars svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Real button so the photo reveal is keyboard-reachable —
+  :focus-visible drives the same reveal as :hover. Reset to look like a
+  plain text label. Focusing this also pauses the auto-scroll (see the
+  JS), so a keyboard user never has the card slide away mid-read. */
+.storyPhotoTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 2px;
+  margin: -2px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: rgba(20, 18, 15, 0.65);
+  border-radius: 4px;
+}
+
+.storyPhotoTrigger:focus-visible {
+  outline: 2px solid #14120f;
+  outline-offset: 3px;
+}
+
+.storyPhotoTriggerIcon {
+  display: inline-flex;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.storyPhotoTrigger:hover .storyPhotoTriggerIcon,
+.storyPhotoTrigger:focus-visible .storyPhotoTriggerIcon {
+  transform: translateX(3px);
+}
+
+/* Photo reveals ONLY when the "View photo" trigger itself is
+  hovered/focused, not the whole card — :has() lets a descendant's state
+  drive a rule on its ancestor, so this stays a single, simple selector
+  instead of extra JS state. */
+.storyCard:has(.storyPhotoTrigger:hover, .storyPhotoTrigger:focus-visible)
+  .storyCardText {
+  opacity: 0;
+}
+
+/* Two-layer hover reveal: a solid mask slides up first (like a curtain
+  rising to cover the card), then the photo itself slides up from below
+  — timed to arrive as the mask sweeps past and off the top, so the
+  image looks like it's emerging from underneath the mask rather than
+  simply fading in. Reverses the same way on mouse-leave/blur. */
+.storyCardPhoto {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Resting position overshoots to 101% (rather than an exact 100%) — on
+  fractional-pixel card heights an exact 100% translate can leave a
+  hairline sliver of the layer visible along the bottom edge after
+  rounding; the small overshoot guarantees full coverage while hidden
+  with no visible difference once revealed. will-change promotes each
+  layer to its own compositor layer, which also helps avoid that seam. */
+.storyCardPhotoMask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-color: #14120f;
+  transform: translateY(101%);
+  transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1);
+  will-change: transform;
+}
+
+/* The mask (above, 0.7s) travels from 101% all the way to -100% — fully
+  covering the card at roughly its own halfway point, then continuing on
+  to uncover it again from the bottom edge upward as it exits off the
+  top. So the photo underneath needs to have already fully arrived by
+  that crossover point, which is what the faster hover-in transition
+  below takes care of. The base (retreat) transition here is the slower,
+  unhurried one used when the photo goes back down on mouse-leave/blur.
+
+  IMPORTANT: the transform order is scale() THEN translateY() — CSS
+  applies the rightmost function first, so translateY(102%) runs on the
+  un-scaled box and THEN the whole thing is scaled up 8% around the
+  center. Writing it the other way around (translate first, scale
+  second) scales the box back toward center afterwards and quietly eats
+  into the translate distance, which is what let a sliver of the photo
+  peek out along the bottom of the card at rest. This order keeps the
+  hidden image comfortably off-canvas at all times. */
+.storyCardPhotoImage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  transform: scale(1.08) translateY(102%);
+  transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform;
+}
+
+.storyCard:has(.storyPhotoTrigger:hover, .storyPhotoTrigger:focus-visible)
+  .storyCardPhotoMask {
+  transform: translateY(-100%);
+}
+
+.storyCard:has(.storyPhotoTrigger:hover, .storyPhotoTrigger:focus-visible)
+  .storyCardPhotoImage {
+  transform: scale(1.03) translateY(0);
+  /* Deliberately faster (and with no start delay) than the mask's 0.7s
+    sweep, so the photo is already fully settled in place well before
+    the mask finishes passing over it and starts uncovering the card
+    from the bottom. */
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Caption that appears over the revealed photo so the name/rating stay
+  visible instead of disappearing along with .storyCardText — without
+  this, hovering "lost" the context of whose photo you were looking at.
+  pointer-events: none is required here: this layer paints above the
+  (still-present, just invisible) trigger button, and without it the
+  cursor would land on the caption instead of the button, dropping the
+  :hover that the whole reveal depends on and causing a flicker loop. */
+.storyCardPhotoCaption {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px clamp(20px, 2.4vw, 26px);
+  color: #ffffff;
+  background: linear-gradient(
+    to top,
+    rgba(10, 10, 10, 0.75),
+    rgba(10, 10, 10, 0) 100%
+  );
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease 0.1s, transform 0.3s ease 0.1s;
+  pointer-events: none;
+}
+
+.storyCard:has(.storyPhotoTrigger:hover, .storyPhotoTrigger:focus-visible)
+  .storyCardPhotoCaption {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.storyCardPhotoCaptionName {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.storyCardPhotoCaptionStars {
+  display: inline-flex;
+  gap: 2px;
+  color: var(--color-accent);
+  flex: none;
+}
+
+.storyCardPhotoCaptionStars svg {
+  width: 12px;
+  height: 12px;
+}
+
+/* Round "Back / Next" cursor that follows the pointer over the
+  carousel — a visual hint that clicking the left/right half of the
+  viewport steps the carousel back/forward (see the click-to-step
+  handler in the JS). Mouse-only, same guard as .storiesViewport above. */
+.storiesCursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background-color: #14120f;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  will-change: transform;
+}
+
+@media (max-width: 860px) {
+  .storiesCursor {
+    display: none;
+  }
+}
+
+/* =======================================================================
+  Stage 2 — philosophy / pull-quote panel
+  ======================================================================= */
+
+.quoteStage {
+  position: relative;
+  /* Settled/no-JS state: final resting color of this stage. */
+  background-color: var(--color-accent);
+  color: var(--color-ink);
+  padding: clamp(96px, 16vw, 220px) clamp(20px, 6vw, 96px);
+  display: flex;
+  justify-content: center;
+}
+
+.quoteInner {
+  max-width: 900px;
+  width: 100%;
+  text-align: center;
+}
+
+.quoteLabel {
+  display: inline-block;
+  margin-bottom: clamp(20px, 3vw, 32px);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.quoteText {
+  margin: 0 0 clamp(40px, 6vw, 64px);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-size: clamp(1.75rem, 5vw, 3.5rem);
+}
+
+/* Each word sits inside an overflow-hidden mask so it can slide up from
+  underneath rather than simply fading — the same reveal language also
+  used for the Stage 1 statement above. Shared (not stage-scoped) on
+  purpose so both places stay visually consistent. */
+.wordMask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  margin-right: 0.28em;
+}
+
+.word {
+  display: inline-block;
+  will-change: transform;
+}
+
+.processButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  cursor: pointer;
+  background-color: var(--color-ink);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 10px 28px 10px 10px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: transform 0.25s ease, background-color 0.25s ease;
+}
+
+.processButton:hover {
+  transform: translateY(-2px);
+}
+
+.processButton:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.processButton:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+.processButtonIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+  color: var(--color-ink);
+}
+
+/* =======================================================================
+  Stage 3 — marquee CTA, accent to black
+  ======================================================================= */
+
+.marqueeSection {
+  position: relative;
+  /* Settled/no-JS state: final resting color of this stage. */
+  background-color: var(--color-ink);
+  color: #ffffff;
+  padding: clamp(48px, 8vw, 96px) 0 clamp(80px, 12vw, 160px);
+  overflow: hidden;
+}
+
+.marqueeViewport {
+  width: 100%;
+  overflow: hidden;
+  border-top: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  opacity: 0.9;
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+}
+
+.marqueeGroup {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.marqueeItem {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 40px);
+  padding: clamp(16px, 3vw, 28px) clamp(20px, 3vw, 40px);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  font-size: clamp(1.75rem, 5vw, 4rem);
+}
+
+.marqueeDot {
+  color: var(--color-accent);
+  font-size: 0.4em;
+}
+
+.marqueeCtaContent {
+  max-width: 760px;
+  margin: clamp(56px, 10vw, 100px) auto 0;
+  padding: 0 clamp(20px, 6vw, 96px);
+  text-align: center;
+}
+
+.marqueeHeading {
+  margin: 0 0 clamp(16px, 2vw, 24px);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  font-size: clamp(1.6rem, 3.6vw, 2.5rem);
+  color: inherit;
+}
+
+.marqueeSub {
+  margin: 0 0 clamp(32px, 5vw, 48px);
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.6;
+  color: inherit;
+  opacity: 0.75;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-accent);
+  color: var(--color-ink);
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 16px 36px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1rem;
+  transition: transform 0.25s ease;
+}
+
+.ctaButton:hover {
+  transform: translateY(-2px);
+}
+
+.ctaButton:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.ctaButton:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .marqueeTrack {
+    transform: none !important;
+  }
+
+  .storiesTrack {
+    transform: none !important;
+  }
+
+  .storyCard,
+  .storyCardPhotoMask,
+  .storyCardPhotoImage,
+  .storyCardPhotoCaption,
+  .storyPhotoTriggerIcon {
+    transition: none !important;
+  }
+}

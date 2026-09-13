@@ -1,0 +1,613 @@
+/*
+  Tokens are scoped to this file on purpose. If your project already
+  defines brand fonts as CSS variables globally (e.g. in globals.css),
+  swap the font-family stacks below for those variables so this section
+  matches the rest of the site exactly.
+
+  --color-accent is the single "punch" color the scroll journey snaps
+  through (white -> black -> accent -> black). Swap it for your brand
+  color.
+  --font-serif is used only for the pull-quote; point it at a loaded
+  premium editorial serif (Playfair Display, Canela, GT Sectra) via
+  next/font if you have one.
+  --font-sans centralizes the grotesk stack used for headings/labels/UI
+  across all three stages so it only has to be swapped in one place. It's
+  set to "Plus Jakarta Sans" below via @import as a drop-in upgrade over
+  the plain system stack — swap this @import + font-family for next/font
+  if you want it self-hosted (better perf, no network round trip / no
+  flash-of-fallback-font on first load).
+  --font-display is a separate token used ONLY by the big Stage 1
+  statement, so that one line gets its own editorial voice (Bricolage
+  Grotesque — a variable font, hence the fractional 650 weight below)
+  without dragging every label/button on the page along with it. If you
+  add real "he sees this everywhere" character to your brand type later,
+  this is the variable to point at your display face.
+*/
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
+
+.section {
+  position: relative;
+  width: 100%;
+  --color-ink: #0a0a0a;
+  --color-accent: #C0FF4A;
+  --font-serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-display: "Bricolage Grotesque", "Plus Jakarta Sans", "Helvetica Neue",
+    Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace,
+    SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* =====================================================================
+   Stage 1 — statement + client stories
+
+   A centered, oversized statement (running bold text with small inline
+   "chip" icons standing in for the four disciplines) sits above a
+   draggable row of client-story cards. Color here is driven entirely by
+   --stage1-* custom properties rather than hardcoded values, so the JS
+   only has to tween one set of variables to flip the whole stage
+   between its light (resting) and dark (scrolled-to) states — see
+   WhyChooseUs.jsx. The values below are the dark state, which is also
+   what non-JS / reduced-motion visitors see, since that's this
+   section's final resting look once the rest of the page has scrolled
+   past it.
+   ===================================================================== */
+
+.stage1 {
+  position: relative;
+  overflow: hidden;
+  --stage1-bg: #0a0a0a;
+  --stage1-fg: #ffffff;
+  --stage1-fg-muted: rgba(255, 255, 255, 0.78);
+  --stage1-fg-soft: rgba(255, 255, 255, 0.68);
+  --stage1-border: rgba(255, 255, 255, 0.14);
+  --stage1-border-soft: rgba(255, 255, 255, 0.1);
+  background-color: var(--stage1-bg);
+  color: var(--stage1-fg);
+  padding: clamp(96px, 15vw, 160px) clamp(20px, 6vw, 96px)
+    clamp(64px, 10vw, 120px);
+}
+
+@media (min-width: 861px) {
+  .stage1 {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+  }
+}
+
+.stage1Content {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+/* Wraps the kicker + statement together — used only as the color-snap
+   trigger point in the JS (fires when THIS block is centered, instead
+   of the much taller section below it). No visual styling of its own. */
+.hero {
+  position: relative;
+}
+
+/* Small eyebrow line above the statement. */
+.kicker {
+  margin: 0 auto clamp(18px, 2.6vw, 24px);
+  max-width: 46ch;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: clamp(0.9rem, 1.15vw, 1.02rem);
+  line-height: 1.5;
+  color: var(--stage1-fg-soft);
+}
+
+/* The big running statement, now set in --font-display (Bricolage
+   Grotesque) at a fractional 650 weight — a variable font gives a
+   deliberate in-between weight instead of defaulting to the nearest
+   static 600/700/800 cut. Built from plain text plus inline .chip
+   icons (see STATEMENT_TOKENS / Chip in the JS). Every word (and every
+   word+chip unit) is now its own masked span so it can be revealed
+   word-by-word on scroll instead of fading in as one flat block — see
+   the .wordMask / .word rules shared with the Stage 2 quote below. */
+.statement {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 650;
+  line-height: 1.32;
+  letter-spacing: -0.02em;
+  font-size: clamp(1.5rem, 3vw, 2.6rem);
+  color: var(--stage1-fg);
+}
+
+/* Glues a discipline name to its chip so the two always wrap as one
+   unit — without this, the chip could land alone at the start of the
+   next line, orphaned from the word it's illustrating. */
+.chipGroup {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  gap: 0.18em;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 1.3em;
+  height: 1.3em;
+  border-radius: 0.4em;
+  color: #0a0a0a;
+  vertical-align: -0.22em;
+  box-shadow: inset 0 0 0 1px rgba(10, 10, 10, 0.08);
+}
+
+.chip svg {
+  width: 56%;
+  height: 56%;
+}
+
+/* ---------- Client stories carousel ---------- */
+
+.storiesSection {
+  margin-top: clamp(56px, 8vw, 100px);
+}
+
+.storiesLabel {
+  display: block;
+  margin-bottom: clamp(20px, 3vw, 28px);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--stage1-fg-soft);
+}
+
+.storiesCarousel {
+  position: relative;
+}
+
+.storiesViewport {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  margin: 0 -4px;
+  padding: 4px;
+}
+
+.storiesViewport::-webkit-scrollbar {
+  display: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .storiesViewport {
+    cursor: none;
+  }
+}
+
+.storiesTrack {
+  display: flex;
+  width: max-content;
+  gap: clamp(16px, 2vw, 24px);
+}
+
+/* Card gets its own lift + shadow on hover now that hovering it no
+   longer triggers the photo reveal (that's scoped to the "View photo"
+   trigger only — see .storyPhotoTrigger below) — this keeps the whole
+   card feeling responsive to the cursor even though the photo swap
+   itself is a more deliberate, targeted action. */
+.storyCard {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  width: clamp(250px, 30vw, 360px);
+  min-height: 260px;
+  border-radius: 18px;
+  overflow: hidden;
+  background-color: #ECE7DC;
+  scroll-snap-align: start;
+  user-select: none;
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.storyCard:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 24px 48px -16px rgba(10, 10, 10, 0.4);
+}
+
+/* flex: 1 (rather than height: 100%) so this reliably stretches to the
+   card's full height even though the card's own height comes from
+   min-height rather than an explicit height — percentage heights don't
+   resolve against min-height, but flex-stretch does. */
+.storyCardText {
+  position: relative;
+  z-index: 3;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: clamp(20px, 2.4vw, 26px);
+  color: #14120f;
+  opacity: 1;
+  transition: opacity 0.35s ease;
+}
+
+/* Photo now reveals ONLY when the "View photo" trigger itself is
+   hovered/focused, not the whole card — :has() lets a descendant's
+   state drive a rule on its ancestor, so this stays a single, simple
+   selector instead of extra JS state. */
+.storyCard:has(.storyPhotoTrigger:hover, .storyPhotoTrigger:focus-visible)
+  .storyCardText {
+  opacity: 0;
+}
+
+.storyHandle {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1.02rem;
+}
+
+.storyQuote {
+  flex: 1;
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  color: rgba(20, 18, 15, 0.75);
+}
+
+.storyMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid rgba(20, 18, 15, 0.12);
+}
+
+.storyStars {
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  color: #14120f;
+}
+
+/* Real button now (was a decorative span) so it's keyboard-reachable —
+   :focus-visible drives the same reveal as :hover. Reset to look like
+   the plain text label it was before. */
+.storyPhotoTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  padding: 2px;
+  margin: -2px;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.82rem;
+  color: rgba(20, 18, 15, 0.65);
+  border-radius: 4px;
+}
+
+.storyPhotoTrigger:focus-visible {
+  outline: 2px solid #14120f;
+  outline-offset: 3px;
+}
+
+.storyPhotoTriggerIcon {
+  display: inline-flex;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.storyPhotoTrigger:hover .storyPhotoTriggerIcon,
+.storyPhotoTrigger:focus-visible .storyPhotoTriggerIcon {
+  transform: translateX(3px);
+}
+
+/* Two-layer hover reveal, matching the reference video: a solid mask
+   slides up first (like a curtain rising to cover the card), then the
+   photo itself slides up from below — timed to arrive as the mask
+   sweeps past and off the top, so the image looks like it's emerging
+   from underneath the mask rather than simply fading in. Reverses the
+   same way on mouse-leave/blur. */
+.storyCardPhoto {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Resting position overshoots to 101%/102% (rather than an exact
+   100%) — on fractional-pixel card heights an exact 100% translate can
+   leave a hairline sliver of the layer visible along the bottom edge
+   after rounding; the small overshoot guarantees full coverage while
+   hidden with no visible difference once revealed. will-change
+   promotes each layer to its own compositor layer, which also helps
+   avoid that seam. */
+.storyCardPhotoMask {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background-color: #14120f;
+  transform: translateY(101%);
+  transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1);
+  will-change: transform;
+}
+
+.storyCardPhotoImage {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background-size: cover;
+  background-position: center;
+  transform: translateY(102%) scale(1.08);
+  transition: transform 0.7s cubic-bezier(0.76, 0, 0.24, 1);
+  transition-delay: 0.12s;
+  will-change: transform;
+}
+
+.storyCard:has(.storyPhotoTrigger:hover, .storyPhotoTrigger:focus-visible)
+  .storyCardPhotoMask {
+  transform: translateY(-100%);
+}
+
+.storyCard:has(.storyPhotoTrigger:hover, .storyPhotoTrigger:focus-visible)
+  .storyCardPhotoImage {
+  transform: translateY(0) scale(1.03);
+}
+
+/* Custom "Back / Next" cursor that follows the pointer over the
+   carousel (see the pointer-tracking effect in the JS). Mouse-only —
+   see the (hover: hover) and (pointer: fine) query above and the
+   pointerType checks in the JS. */
+.storiesCursor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background-color: #14120f;
+  color: #ffffff;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.82rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+  will-change: transform;
+}
+
+@media (max-width: 860px) {
+  .storiesCursor {
+    display: none;
+  }
+}
+
+/* =====================================================================
+   Stage 2 — philosophy / pull-quote panel (existing direction, polished)
+   ===================================================================== */
+
+.quoteStage {
+  position: relative;
+  /* Settled/no-JS state: final resting color of this stage. */
+  background-color: var(--color-accent);
+  color: var(--color-ink);
+  padding: clamp(96px, 16vw, 220px) clamp(20px, 6vw, 96px);
+  display: flex;
+  justify-content: center;
+}
+
+.quoteInner {
+  max-width: 900px;
+  width: 100%;
+  text-align: center;
+}
+
+.quoteLabel {
+  display: inline-block;
+  margin-bottom: clamp(20px, 3vw, 32px);
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.8rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+.quoteText {
+  margin: 0 0 clamp(40px, 6vw, 64px);
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-weight: 500;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  font-size: clamp(1.75rem, 5vw, 3.5rem);
+}
+
+/* Each word sits inside an overflow-hidden mask so it can slide up from
+   underneath rather than simply fading — the same reveal language now
+   also used for the Stage 1 statement above. Shared (not stage-scoped)
+   on purpose so both places stay visually consistent. */
+.wordMask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  margin-right: 0.28em;
+}
+
+.word {
+  display: inline-block;
+  will-change: transform;
+}
+
+.processButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  border: none;
+  cursor: pointer;
+  background-color: var(--color-ink);
+  color: #ffffff;
+  border-radius: 999px;
+  padding: 10px 28px 10px 10px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: transform 0.25s ease, background-color 0.25s ease;
+}
+
+.processButton:hover {
+  transform: translateY(-2px);
+}
+
+.processButton:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.processButton:focus-visible {
+  outline: 2px solid var(--color-ink);
+  outline-offset: 3px;
+}
+
+.processButtonIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--color-accent);
+  color: var(--color-ink);
+}
+
+/* =====================================================================
+   Stage 3 — marquee CTA, accent to black (existing direction, polished)
+   ===================================================================== */
+
+.marqueeSection {
+  position: relative;
+  /* Settled/no-JS state: final resting color of this stage. */
+  background-color: var(--color-ink);
+  color: #ffffff;
+  padding: clamp(48px, 8vw, 96px) 0 clamp(80px, 12vw, 160px);
+  overflow: hidden;
+}
+
+.marqueeViewport {
+  width: 100%;
+  overflow: hidden;
+  border-top: 1px solid currentColor;
+  border-bottom: 1px solid currentColor;
+  opacity: 0.9;
+}
+
+.marqueeTrack {
+  display: flex;
+  width: max-content;
+}
+
+.marqueeGroup {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.marqueeItem {
+  display: inline-flex;
+  align-items: center;
+  gap: clamp(20px, 3vw, 40px);
+  padding: clamp(16px, 3vw, 28px) clamp(20px, 3vw, 40px);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  font-size: clamp(1.75rem, 5vw, 4rem);
+}
+
+.marqueeDot {
+  color: var(--color-accent);
+  font-size: 0.4em;
+}
+
+.marqueeCtaContent {
+  max-width: 760px;
+  margin: clamp(56px, 10vw, 100px) auto 0;
+  padding: 0 clamp(20px, 6vw, 96px);
+  text-align: center;
+}
+
+.marqueeHeading {
+  margin: 0 0 clamp(16px, 2vw, 24px);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  font-size: clamp(1.6rem, 3.6vw, 2.5rem);
+  color: inherit;
+}
+
+.marqueeSub {
+  margin: 0 0 clamp(32px, 5vw, 48px);
+  font-size: clamp(1rem, 1.5vw, 1.15rem);
+  line-height: 1.6;
+  color: inherit;
+  opacity: 0.75;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--color-accent);
+  color: var(--color-ink);
+  text-decoration: none;
+  border-radius: 999px;
+  padding: 16px 36px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 1rem;
+  transition: transform 0.25s ease;
+}
+
+.ctaButton:hover {
+  transform: translateY(-2px);
+}
+
+.ctaButton:active {
+  transform: translateY(0) scale(0.97);
+}
+
+.ctaButton:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+
+/* ---------- Reduced motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .marqueeTrack {
+    transform: none !important;
+  }
+
+  .storyCard,
+  .storyCardPhotoMask,
+  .storyCardPhotoImage,
+  .storyPhotoTriggerIcon {
+    transition: none !important;
+  }
+}
