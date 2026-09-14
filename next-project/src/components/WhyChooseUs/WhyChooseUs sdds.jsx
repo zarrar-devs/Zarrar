@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -21,14 +21,13 @@ const QUOTE_TEXT =
   "A beautiful website that doesn't bring you customers is just an " +
   "expensive brochure.";
 
-// The big statement, now tokenized word-by-word (instead of a handful
-// of multi-word segments) so every word — plain or chip-bearing — gets
-// its own mask and can be revealed individually on scroll (see the
-// GSAP block below). A token with a `chip` id renders as a glued
-// word+icon unit via .chipGroup, same as before; a plain token is just
-// a word. Keeping the four-discipline copy here (instead of a separate
-// capability list) means the visible text and the Service schema at
-// the bottom of this file stay in sync automatically.
+// The big statement, tokenized word-by-word so every word — plain or
+// chip-bearing — gets its own mask and can be revealed individually on
+// scroll (see the GSAP block below). A token with a `chip` id renders
+// as a glued word+icon unit via .chipGroup, same as before; a plain
+// token is just a word. Keeping the four-discipline copy here (instead
+// of a separate capability list) means the visible text and the
+// Service schema at the bottom of this file stay in sync automatically.
 const STATEMENT_TOKENS = [
   { text: "We" },
   { text: "combine" },
@@ -57,11 +56,10 @@ const STATEMENT_TOKENS = [
 
 // Icon + tint for each inline chip. Colors are fixed (not tied to the
 // stage1 light/dark theme vars) since they're standing in for photos —
-// same reasoning as the reference: a photo doesn't change with the
-// section's color state, so these shouldn't either. Every icon now
-// shares the same stroke weight (1.6) so the set reads as one
-// deliberate family instead of four icons picked up from different
-// places.
+// a photo doesn't change with the section's color state, so these
+// shouldn't either. Every icon shares the same stroke weight (1.6) so
+// the set reads as one deliberate family instead of four icons picked
+// up from different places.
 const CHIP_DEFS = {
   web: {
     bg: "#CFE3FF",
@@ -77,8 +75,6 @@ const CHIP_DEFS = {
     bg: "#FFDCA8",
     label: "Lead generation",
     icon: (
-      // Funnel — reads more directly as "lead generation" than the
-      // previous bullseye did.
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
         <path d="M4 4h16l-6 8v6l-4 2v-8z" />
       </svg>
@@ -107,8 +103,8 @@ const CHIP_DEFS = {
 };
 
 // Inline chip used inside the statement — purely decorative, so it's
-// hidden from assistive tech; the discipline name is already present
-// as real text right before it.
+// hidden from assistive tech; the discipline name is already present as
+// real text right before it.
 function Chip({ id }) {
   const def = CHIP_DEFS[id];
   if (!def) return null;
@@ -153,6 +149,7 @@ const APPROACH_ITEMS = [
 const STORIES = [
   {
     handle: "@Sarah Bennett",
+    role: "Founder, Bennett Studio",
     quote:
       "Working with ZARRAR changed how we think about our website. It's " +
       "not just prettier now — it actually brings in leads every week.",
@@ -161,6 +158,7 @@ const STORIES = [
   },
   {
     handle: "@Marcus Webb",
+    role: "Marketing Lead, Webb & Co",
     quote:
       "The email flows they built paid for the whole project twice over " +
       "inside the first quarter. Open rates have never been this consistent.",
@@ -169,6 +167,7 @@ const STORIES = [
   },
   {
     handle: "@Priya Raman",
+    role: "Co-founder, Raman Interiors",
     quote:
       "Finally a team that gets design and marketing together. Our brand " +
       "feels the same everywhere now — site, ads, and every email.",
@@ -177,6 +176,7 @@ const STORIES = [
   },
   {
     handle: "@Daniel Osei",
+    role: "Operations Director, Osei Logistics",
     quote:
       "They didn't hand us a site and disappear. Six months in and we're " +
       "still getting new lead-generation ideas from this team.",
@@ -185,6 +185,7 @@ const STORIES = [
   },
   {
     handle: "@Elena Kowalski",
+    role: "Owner, Kowalski Bakehouse",
     quote:
       "Clean, fast, and it actually converts — that's rare. I'd recommend " +
       "ZARRAR to any small business tired of pretty-but-useless websites.",
@@ -193,12 +194,60 @@ const STORIES = [
   },
 ];
 
-function StarRating({ rating }) {
+// Single five-pointed star, drawn once and reused filled/outlined so the
+// rating reads crisply at any size instead of relying on a font's own
+// glyph metrics (unicode ★/☆ render inconsistently across platforms and
+// can look mismatched in weight/size next to the rest of the UI).
+function StarIcon({ filled }) {
   return (
-    <span className={styles.storyStars} aria-label={`${rating} out of 5 stars`}>
-      {"★".repeat(rating)}
-      {"☆".repeat(5 - rating)}
+    <svg
+      viewBox="0 0 20 20"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth={filled ? 0 : 1.4}
+      strokeLinejoin="round"
+    >
+      <path d="M10 1.4l2.55 5.4 5.85.66-4.36 4.06 1.15 5.83L10 14.62l-5.19 2.73 1.15-5.83L1.6 7.46l5.85-.66z" />
+    </svg>
+  );
+}
+
+// The icon row itself is aria-hidden — the human-readable rating is
+// announced once via the wrapping element's aria-label (see call sites
+// below), so a screen reader isn't asked to parse five separate glyphs.
+function StarRating({ rating, className }) {
+  return (
+    <span className={className} aria-hidden="true">
+      {Array.from({ length: 5 }).map((_, i) => (
+        <StarIcon key={i} filled={i < rating} />
+      ))}
     </span>
+  );
+}
+
+function ChevronIcon({ direction }) {
+  const d = direction === "left" ? "M12.5 5l-6 6 6 6" : "M7.5 5l6 6-6 6";
+  return (
+    <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d={d} />
+    </svg>
+  );
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor">
+      <path d="M6.5 4.5v11l9-5.5z" />
+    </svg>
+  );
+}
+
+function PauseIcon() {
+  return (
+    <svg viewBox="0 0 20 20" fill="currentColor">
+      <rect x="5.5" y="4.5" width="3" height="11" rx="0.8" />
+      <rect x="11.5" y="4.5" width="3" height="11" rx="0.8" />
+    </svg>
   );
 }
 
@@ -212,6 +261,26 @@ const MARQUEE_REPEAT = 6;
 // a quick eased transition.
 const SNAP_DURATION = 0.5;
 const SNAP_EASE = "power2.out";
+
+// How long one full loop of the story cards takes to drift by (one pass
+// through a single, non-duplicated set — since the track holds two
+// copies and travels xPercent(-50), this is the time to travel half the
+// track). Bump this up to slow the drift down, or down to speed it up.
+const STORIES_LOOP_DURATION = 14;
+
+// Roughly how long a single card takes to drift past, assuming a
+// constant rate across the loop (the tween's ease is "none", so this
+// holds). Used to step the carousel by exactly "one card" — both from
+// the prev/next buttons and from clicking the left/right half of the
+// viewport.
+const CARD_STEP_DURATION = STORIES_LOOP_DURATION / STORIES.length;
+
+// Hovering a card brings the loop to a full, clean stop (0 = stopped)
+// instead of just slowing it down, so someone can actually read a card
+// without it drifting out from under them. The card currently sitting
+// in the exit-fade zone is still excluded from this (see isExiting
+// below) so you never freeze a half-faded card mid-fade.
+const STORIES_HOVER_TIMESCALE = 0;
 
 // Stage 1 lives in two color states: "light" (the resting state before
 // the section is scrolled into view) and "dark" (snapped once the
@@ -250,7 +319,12 @@ export default function WhyChooseUs() {
   const storiesViewportRef = useRef(null);
   const storiesTrackRef = useRef(null);
   const storiesCursorRef = useRef(null);
-  const storyItemRefs = useRef([]);
+  const storyItemRefs = useRef([]); // only the first (real, non-duplicated,
+  // non-aria-hidden) group of cards lives here — see the JSX below.
+  const carouselTweenRef = useRef(null); // exposed outside the effect so
+  // the prev/next/pause buttons can drive the same tween the auto-scroll
+  // effect creates.
+  const [isPaused, setIsPaused] = useState(false);
 
   // Stage 2 — philosophy quote
   const quoteRef = useRef(null);
@@ -272,8 +346,9 @@ export default function WhyChooseUs() {
 
     // No-JS and reduced-motion visitors get the fully "settled" version
     // that's already in the CSS: Stage 1 resting dark (see .stage1
-    // defaults), each later stage's final resting color, and a static
-    // marquee clipped to one line. Nothing to wire up in that case.
+    // defaults), each later stage's final resting color, a static
+    // marquee clipped to one line, and a static (non-looping) row of
+    // story cards. Nothing to wire up in that case.
     if (prefersReducedMotion) return;
 
     const ctx = gsap.context(() => {
@@ -282,11 +357,9 @@ export default function WhyChooseUs() {
       // NOT tied to the whole (now much taller, statement + carousel)
       // section, since a "top X%" point on that full tall box would fire
       // as soon as its top edge passed that line, well before the
-      // heading is visually centered. Note also: this section is no
-      // longer pinned — pinning content taller than one viewport would
-      // just clip the carousel off the bottom of the screen while
-      // pinned. The color snap itself still fires at a fixed scroll
-      // point, same as before.
+      // heading is visually centered. This section is not pinned —
+      // pinning content taller than one viewport would just clip the
+      // carousel off the bottom of the screen while pinned.
       gsap.set(stage1Ref.current, STAGE1_LIGHT_VARS);
 
       const snapStage1 = (toDark) => {
@@ -355,8 +428,10 @@ export default function WhyChooseUs() {
         scrollTrigger: { trigger: storiesLabelRef.current, start: "top 92%" },
       });
 
-      // Story cards — small blur-in added on top of the previous
-      // fade/rise/stagger for a softer, more deliberate arrival.
+      // Story cards — small blur-in on top of a fade/rise/stagger for a
+      // softer, more deliberate arrival. Only the first (real) group of
+      // cards is in storyItemRefs, so the duplicated loop-filler group
+      // doesn't double up this animation.
       gsap.fromTo(
         storyItemRefs.current,
         { opacity: 0, y: 36, scale: 0.97, filter: "blur(6px)" },
@@ -508,23 +583,147 @@ export default function WhyChooseUs() {
   }, []);
 
   // ---------------------------------------------------------------
-  // Client-stories carousel: drag-to-scroll + a custom "Back / Next"
-  // cursor that follows the pointer and flips label depending on which
-  // half of the track it's over. Mouse-only — touch devices keep plain
-  // native swipe scrolling (see the pointerType checks below). The
-  // photo reveal on hover is handled entirely in CSS via :has() on the
-  // "View photo" trigger (see .storyPhotoTrigger in the stylesheet).
+  // Client-stories carousel: a continuous auto-scroll. The track holds
+  // two identical groups of cards back to back (see the JSX) and drifts
+  // left by exactly 50% of its own width on an infinite loop, so it
+  // never visibly "resets" — new cards keep arriving on the right and
+  // old ones fade out on the left (matching the mask-image fade on
+  // .storiesViewport).
+  //
+  // Hovering (or keyboard-focusing) a card brings the loop to a full
+  // stop — see STORIES_HOVER_TIMESCALE — so someone can read a
+  // testimonial without it sliding away. Listeners live on each card
+  // itself (not the shared viewport), so hovering the gaps between
+  // cards does nothing.
+  //
+  // Three ways to move manually, all sharing stepCarousel(): the
+  // prev/next buttons in the header (keyboard- and touch-reachable),
+  // clicking the left/right half of the viewport (desktop, hinted by
+  // the round "Back / Next" cursor), and the pause button, which fully
+  // stops the tween until toggled back on.
+  //
+  // One exception to the hover-stop: whichever card is CURRENTLY sitting
+  // in the narrow exit sliver on the left edge (already partway under
+  // the fade) is left at full speed instead of stopped — freezing it
+  // there would leave a half-faded card hanging, which is exactly the
+  // "looks cut off" look this was built to avoid. This is checked by
+  // live position (getBoundingClientRect), not by which of the 5
+  // testimonials it happens to be — with 5 cards cycling through only 3
+  // visible slots, tying the exception to content instead of position
+  // meant it landed on the wrong slot half the time.
+  // ---------------------------------------------------------------
+  useEffect(() => {
+    const track = storiesTrackRef.current;
+    const viewport = storiesViewportRef.current;
+    if (!track || !viewport) return;
+
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    if (prefersReducedMotion) return;
+
+    const tween = gsap.to(track, {
+      xPercent: -50,
+      ease: "none",
+      duration: STORIES_LOOP_DURATION,
+      repeat: -1,
+    });
+    carouselTweenRef.current = tween;
+
+    const stop = () => {
+      if (tween.paused()) return;
+      gsap.to(tween, { timeScale: STORIES_HOVER_TIMESCALE, duration: 0.25, overwrite: true });
+    };
+    const resume = () => {
+      if (tween.paused()) return;
+      gsap.to(tween, { timeScale: 1, duration: 0.4, overwrite: true });
+    };
+
+    // Roughly matches where .storiesViewport's mask-image starts fading
+    // on the left (8%) plus a little margin, so "exiting" means "already
+    // visibly fading", not just "technically past some invisible line".
+    const EXIT_ZONE_RATIO = 0.16;
+    const isExiting = (card) => {
+      const viewportBounds = viewport.getBoundingClientRect();
+      const cardBounds = card.getBoundingClientRect();
+      const cardCenter = cardBounds.left + cardBounds.width / 2 - viewportBounds.left;
+      return cardCenter < viewportBounds.width * EXIT_ZONE_RATIO;
+    };
+
+    const handleEnter = (event) => {
+      if (isExiting(event.currentTarget)) {
+        resume();
+      } else {
+        stop();
+      }
+    };
+    const handleLeave = () => resume();
+
+    // Manual control: step exactly one card back/forward by nudging the
+    // tween's own playhead, instead of re-triggering it from scratch —
+    // this keeps whatever card is mid-transition smooth rather than
+    // snapping.
+    //
+    // Uses totalTime() rather than time(): time() only reports the
+    // position within the CURRENT repeat cycle and resets to 0 at the
+    // start of every loop, so subtracting a step near the start of a
+    // cycle could go negative — GSAP then clamps that to 0 instead of
+    // wrapping into the previous lap, which is why clicking "back" did
+    // nothing whenever the loop happened to be near its seam.
+    // totalTime() counts continuously across repeats, so it can be
+    // nudged in either direction without ever hitting that clamp.
+    const stepCarousel = (direction) => {
+      gsap.to(tween, {
+        totalTime: tween.totalTime() + direction * CARD_STEP_DURATION,
+        duration: 0.5,
+        ease: "power2.inOut",
+        overwrite: true,
+      });
+    };
+
+    const handleClick = (event) => {
+      if (event.target.closest(`.${styles.storyPhotoTrigger}`)) return;
+      const bounds = viewport.getBoundingClientRect();
+      const clickedLeftHalf = event.clientX - bounds.left < bounds.width / 2;
+      stepCarousel(clickedLeftHalf ? -1 : 1);
+    };
+    viewport.addEventListener("click", handleClick);
+
+    const cards = Array.from(track.querySelectorAll(`.${styles.storyCard}`));
+    cards.forEach((card) => {
+      card.addEventListener("mouseenter", handleEnter);
+      card.addEventListener("mouseleave", handleLeave);
+      card.addEventListener("focusin", handleEnter);
+      card.addEventListener("focusout", handleLeave);
+    });
+
+    // Exposed on the ref so the header's prev/next/pause buttons (real
+    // JSX elements, not part of this effect's closure) can drive the
+    // same tween.
+    tween.stepCarousel = stepCarousel;
+
+    return () => {
+      viewport.removeEventListener("click", handleClick);
+      cards.forEach((card) => {
+        card.removeEventListener("mouseenter", handleEnter);
+        card.removeEventListener("mouseleave", handleLeave);
+        card.removeEventListener("focusin", handleEnter);
+        card.removeEventListener("focusout", handleLeave);
+      });
+      tween.kill();
+      carouselTweenRef.current = null;
+    };
+  }, []);
+
+  // ---------------------------------------------------------------
+  // Round "Back / Next" cursor that follows the pointer over the
+  // carousel — a visual hint that the viewport is click-to-navigate
+  // (see the click-to-step handler above). Mouse-only.
   // ---------------------------------------------------------------
   useEffect(() => {
     const viewport = storiesViewportRef.current;
-    const track = storiesTrackRef.current;
     const cursor = storiesCursorRef.current;
-    if (!viewport || !track || !cursor) return;
-
-    let isPointerDown = false;
-    let didDrag = false;
-    let startX = 0;
-    let startScrollLeft = 0;
+    if (!viewport || !cursor) return;
 
     const setCursorPosition = (event) => {
       const bounds = viewport.getBoundingClientRect();
@@ -532,13 +731,6 @@ export default function WhyChooseUs() {
       const y = event.clientY - bounds.top;
       cursor.style.transform = `translate3d(${x}px, ${y}px, 0) translate(-50%, -50%)`;
       cursor.textContent = x < bounds.width / 2 ? "Back" : "Next";
-    };
-
-    const cardStep = () => {
-      const firstCard = storyItemRefs.current.find(Boolean);
-      const gap = parseFloat(getComputedStyle(track).columnGap || "0") || 0;
-      if (!firstCard) return viewport.clientWidth * 0.8;
-      return firstCard.getBoundingClientRect().width + gap;
     };
 
     const handlePointerEnter = (event) => {
@@ -550,51 +742,42 @@ export default function WhyChooseUs() {
     const handlePointerLeave = (event) => {
       if (event.pointerType !== "mouse") return;
       cursor.style.opacity = "0";
-      isPointerDown = false;
     };
 
     const handlePointerMove = (event) => {
       if (event.pointerType !== "mouse") return;
       setCursorPosition(event);
-      if (!isPointerDown) return;
-      if (Math.abs(event.clientX - startX) > 4) didDrag = true;
-      viewport.scrollLeft = startScrollLeft - (event.clientX - startX);
-    };
-
-    const handlePointerDown = (event) => {
-      if (event.pointerType !== "mouse") return;
-      isPointerDown = true;
-      didDrag = false;
-      startX = event.clientX;
-      startScrollLeft = viewport.scrollLeft;
-    };
-
-    const handlePointerUp = (event) => {
-      if (event.pointerType !== "mouse" || !isPointerDown) return;
-      isPointerDown = false;
-      if (didDrag) return;
-      const bounds = viewport.getBoundingClientRect();
-      const goBack = event.clientX - bounds.left < bounds.width / 2;
-      viewport.scrollBy({
-        left: goBack ? -cardStep() : cardStep(),
-        behavior: "smooth",
-      });
     };
 
     viewport.addEventListener("pointerenter", handlePointerEnter);
     viewport.addEventListener("pointerleave", handlePointerLeave);
     viewport.addEventListener("pointermove", handlePointerMove);
-    viewport.addEventListener("pointerdown", handlePointerDown);
-    window.addEventListener("pointerup", handlePointerUp);
 
     return () => {
       viewport.removeEventListener("pointerenter", handlePointerEnter);
       viewport.removeEventListener("pointerleave", handlePointerLeave);
       viewport.removeEventListener("pointermove", handlePointerMove);
-      viewport.removeEventListener("pointerdown", handlePointerDown);
-      window.removeEventListener("pointerup", handlePointerUp);
     };
   }, []);
+
+  // Header controls: same stepCarousel used by click-to-navigate, plus a
+  // real pause toggle (separate from the hover-stop) so the auto-scroll
+  // is fully under someone's control, not just paused as a side effect
+  // of where their mouse happens to be — matters for anyone relying on
+  // switch access, screen magnification, or just wanting it to stop.
+  const handleStep = (direction) => {
+    const tween = carouselTweenRef.current;
+    if (!tween || tween.paused()) return;
+    tween.stepCarousel?.(direction);
+  };
+
+  const handleTogglePause = () => {
+    const tween = carouselTweenRef.current;
+    if (!tween) return;
+    const nextPaused = !tween.paused();
+    tween.paused(nextPaused);
+    setIsPaused(nextPaused);
+  };
 
   // JSON-LD mirrors the four disciplines named in the statement above.
   const serviceSchema = {
@@ -615,6 +798,101 @@ export default function WhyChooseUs() {
       })),
     },
   };
+
+  // Renders one full set of story cards. `duplicate` marks the
+  // loop-filler copy: hidden from assistive tech and pulled out of tab
+  // order so a screen reader / keyboard user only ever encounters each
+  // testimonial once, even though it's visually painted twice for the
+  // seamless loop.
+  const renderStoryGroup = (duplicate) => (
+    <div
+      className={styles.storiesTrackGroup}
+      aria-hidden={duplicate ? "true" : undefined}
+    >
+      {STORIES.map((story, i) => (
+        <article
+          key={story.handle}
+          ref={duplicate ? undefined : (el) => (storyItemRefs.current[i] = el)}
+          className={styles.storyCard}
+        >
+          <div className={styles.storyCardText}>
+            <svg
+              className={styles.storyQuoteMark}
+              viewBox="0 0 32 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <path d="M4 24V15.2C4 8.4 8 3.2 14.8 0l2 4C12.4 6.8 10.4 10 10 13.6h6V24H4zm16 0V15.2C20 8.4 24 3.2 30.8 0l2 4c-4.4 2.8-6.4 6-6.8 9.6h6V24H20z" />
+            </svg>
+
+            <div className={styles.storyCardHeading}>
+              <h3 className={styles.storyHandle}>{story.handle}</h3>
+              <p className={styles.storyRole}>{story.role}</p>
+            </div>
+
+            <p className={styles.storyQuote}>{story.quote}</p>
+
+            <div className={styles.storyMeta}>
+              <span
+                className={styles.storyStars}
+                aria-label={`${story.rating} out of 5 stars`}
+              >
+                <StarRating rating={story.rating} />
+              </span>
+
+              {/* The ONLY thing that triggers the photo reveal — see
+                  :has() in the stylesheet. Focusing/hovering it also
+                  pauses the auto-scroll (see the effect above). */}
+              <button
+                type="button"
+                className={styles.storyPhotoTrigger}
+                aria-label={`View photo shared by ${story.handle}`}
+                tabIndex={duplicate ? -1 : undefined}
+              >
+                View photo
+                <span className={styles.storyPhotoTriggerIcon} aria-hidden="true">
+                  <svg
+                    viewBox="0 0 24 24"
+                    width="12"
+                    height="12"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 6l6 6-6 6" />
+                  </svg>
+                </span>
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={styles.storyCardPhoto}
+            role="img"
+            aria-label={`Photo shared by ${story.handle}`}
+          >
+            <div className={styles.storyCardPhotoMask} />
+            <div
+              className={styles.storyCardPhotoImage}
+              style={{ backgroundImage: `url(${story.photo})` }}
+            />
+            {/* Keeps the name + rating visible once the photo covers the
+                card, so hovering doesn't strip away whose story this
+                is — the text underneath fades out at the same time. */}
+            <div className={styles.storyCardPhotoCaption} aria-hidden="true">
+              <p className={styles.storyCardPhotoCaptionName}>{story.handle}</p>
+              <StarRating
+                rating={story.rating}
+                className={styles.storyCardPhotoCaptionStars}
+              />
+            </div>
+          </div>
+        </article>
+      ))}
+    </div>
+  );
 
   return (
     <section
@@ -670,72 +948,56 @@ export default function WhyChooseUs() {
           </div>
 
           <div className={styles.storiesSection}>
-            <span ref={storiesLabelRef} className={styles.storiesLabel}>
-              Client stories
-            </span>
+            <div className={styles.storiesHeader}>
+              <span ref={storiesLabelRef} className={styles.storiesLabel}>
+                Client stories
+              </span>
 
-            <div className={styles.storiesCarousel}>
+              <div className={styles.storiesControls}>
+                <button
+                  type="button"
+                  className={styles.storiesControlButton}
+                  onClick={() => handleStep(-1)}
+                  aria-label="Show previous client story"
+                >
+                  <ChevronIcon direction="left" />
+                </button>
+                <button
+                  type="button"
+                  className={styles.storiesControlButton}
+                  onClick={handleTogglePause}
+                  aria-pressed={isPaused}
+                  aria-label={isPaused ? "Resume auto-scroll" : "Pause auto-scroll"}
+                >
+                  {isPaused ? <PlayIcon /> : <PauseIcon />}
+                </button>
+                <button
+                  type="button"
+                  className={styles.storiesControlButton}
+                  onClick={() => handleStep(1)}
+                  aria-label="Show next client story"
+                >
+                  <ChevronIcon direction="right" />
+                </button>
+              </div>
+            </div>
+
+            {/* The track drifts on its own and comes to a full stop when
+                a card itself (not the gaps or faded edges) is hovered or
+                focused, or when the pause button above is toggled on —
+                see the effects above. Click the left/right half to step
+                manually; the round cursor is the visual hint for that.
+                The mask-image fade on .storiesViewport is what keeps the
+                leading/trailing card from ever looking "chopped". */}
+            <div
+              className={styles.storiesCarousel}
+              role="region"
+              aria-label="Client stories"
+            >
               <div className={styles.storiesViewport} ref={storiesViewportRef}>
                 <div className={styles.storiesTrack} ref={storiesTrackRef}>
-                  {STORIES.map((story, i) => (
-                    <article
-                      key={story.handle}
-                      ref={(el) => (storyItemRefs.current[i] = el)}
-                      className={styles.storyCard}
-                    >
-                      <div className={styles.storyCardText}>
-                        <h3 className={styles.storyHandle}>{story.handle}</h3>
-                        <p className={styles.storyQuote}>{story.quote}</p>
-                        <div className={styles.storyMeta}>
-                          <StarRating rating={story.rating} />
-                          {/* Button (not a plain span) so the photo
-                              reveal is reachable by keyboard too — see
-                              :focus-visible in the stylesheet. This is
-                              the ONLY thing that triggers the photo now;
-                              hovering the rest of the card no longer
-                              does. */}
-                          <button
-                            type="button"
-                            className={styles.storyPhotoTrigger}
-                            aria-label={`View photo shared by ${story.handle}`}
-                          >
-                            View photo
-                            <span
-                              className={styles.storyPhotoTriggerIcon}
-                              aria-hidden="true"
-                            >
-                              <svg
-                                viewBox="0 0 24 24"
-                                width="12"
-                                height="12"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2.5"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                              >
-                                <path d="M9 6l6 6-6 6" />
-                              </svg>
-                            </span>
-                          </button>
-                        </div>
-                      </div>
-                      {/* Two-layer reveal, now keyed off the trigger
-                          button above via :has() in the stylesheet
-                          rather than :hover on this whole card. */}
-                      <div
-                        className={styles.storyCardPhoto}
-                        role="img"
-                        aria-label={`Photo shared by ${story.handle}`}
-                      >
-                        <div className={styles.storyCardPhotoMask} />
-                        <div
-                          className={styles.storyCardPhotoImage}
-                          style={{ backgroundImage: `url(${story.photo})` }}
-                        />
-                      </div>
-                    </article>
-                  ))}
+                  {renderStoryGroup(false)}
+                  {renderStoryGroup(true)}
                 </div>
               </div>
 

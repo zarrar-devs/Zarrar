@@ -8,31 +8,48 @@
  *   (swap picsum for your real, self-hosted assets before shipping — a third-party
  *    image host on the critical path hurts LCP, which hurts SEO.)
  *
- * ── What changed vs the previous version (round 6) ────────────────────────────
- * Scope of this pass: the "Who are we?" heading and the lede are still
- * UNCHANGED. Four fixes to the capability section, all reported from a
- * screen recording of round 5:
+ * ── What changed vs the previous version (round 7) ────────────────────────────
+ * Round 6 fixed the black-flash-on-load, the portrait crop of landscape
+ * photos, the plain crossfade, and row alignment (see the bullets further
+ * down — still accurate, untouched this round). This pass adds:
  *
+ * 5) BLUR-REVEAL ON EVERY PHOTO, INCLUDING THE FIRST ONE — the first
+ *    (email marketing) photo used to sit fully sharp at rest, which read
+ *    as "done" before the section had even introduced it. Every photo —
+ *    including the first — now starts softly blurred and sharpens
+ *    exactly when its row lights up, so the unblur itself becomes part
+ *    of the "this one's active now" cue. Same blur→sharp treatment on
+ *    all three, on both desktop and mobile; the outgoing photo now also
+ *    picks up a touch of blur as it's covered, for a bit of depth.
+ * 6) SEO — capability photos now carry their real, descriptive alt text
+ *    (it was authored per-item in the data but never actually wired into
+ *    the <Image>, so every photo was shipping alt=""). Added a JSON-LD
+ *    <script> describing the three services as structured data, so
+ *    they're machine-readable independent of the scroll-linked reveal.
+ * 7) MINOR — blur radius is a touch lighter on mobile (cheaper to
+ *    composite on weaker GPUs), and filter is added to the media
+ *    elements' will-change hint alongside transform.
+ *
+ * ── Round 6 recap (still current) ──────────────────────────────────────────
  * 1) BLACK FLASH ON FIRST LOAD — round 5 set every stage photo to
  *    opacity 0 on mount, including the first one, so there was a gap
  *    (between the block fading in and cap1 actually starting) where the
  *    stage was visible but showing nothing — a black box. The first
  *    photo now stays visible from mount onward (matching the no-JS
  *    resting state), and activating row 0 no longer re-fades it from
- *    black — it just gets a small confirm "pop" instead.
+ *    black.
  * 2) PORTRAIT CROP OF LANDSCAPE PHOTOS — the stage used to stretch to
  *    the full height of the (taller) row list at a ~230px width, i.e. a
  *    tall portrait box, which cover-cropped every landscape photo down
  *    to a thin vertical sliver. The stage is now a fixed 4:3 frame at a
  *    wider, more balanced column width, vertically centred next to the
  *    list instead of stretched to match its height.
- * 3) "NEXT LEVEL" TRANSITION — swapped the plain opacity crossfade for
- *    a directional wipe: the incoming photo reveals left-to-right via
- *    clip-path (the same direction as the row's black fill), with a
- *    Ken-Burns scale-in pop on the image itself; the outgoing photo gets
- *    a small push-back scale + fade right as the wipe finishes covering
- *    it. Same idea on both the desktop scrubbed timeline and the
- *    mobile discrete per-row triggers.
+ * 3) DIRECTIONAL WIPE — swapped the plain opacity crossfade for a
+ *    left-to-right clip-path wipe (matching the row fill's direction)
+ *    plus a Ken-Burns scale-in pop; the outgoing photo gets a small
+ *    push-back scale + fade right as the wipe finishes covering it.
+ *    Same idea on both the desktop scrubbed timeline and the mobile
+ *    discrete per-row triggers.
  * 4) LAYOUT / ALIGNMENT — row content is now vertically centered
  *    (was baseline, which misaligned the index number against the
  *    two-line descriptions), and the scroll-progress rail is nudged
@@ -133,6 +150,7 @@ const CAPABILITIES = [
       // track) clip before shipping — this MDN clip is a public-domain
       // placeholder so the layout is real end-to-end.
       src: "/web-development.png",
+      alt: "Responsive web development project preview",
     },
   },
 ];
@@ -146,6 +164,19 @@ const CLOSING_TEXT =
 // left-anchored scaleX, so the two "spotlight" motions read as one idea.
 const HIDDEN_CLIP = "inset(0% 0% 0% 100%)";
 const VISIBLE_CLIP = "inset(0% 0% 0% 0%)";
+
+// Structured data so search engines can read the three services directly,
+// independent of the scroll-linked reveal animation.
+const SERVICES_JSON_LD = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  itemListElement: CAPABILITIES.map((cap, i) => ({
+    "@type": "Service",
+    position: i + 1,
+    name: cap.label,
+    description: cap.description,
+  })),
+};
 
 export default function WhoAreWe() {
   const pinRef = useRef(null);
@@ -203,6 +234,11 @@ export default function WhoAreWe() {
 
         const rings = ringsLayer.querySelectorAll(".waw-ring");
         const startVideo = () => webVideoRef.current?.play?.().catch(() => {});
+        // Slightly lighter blur on mobile — cheaper to composite on weaker GPUs.
+        const blurPx = isDesktop ? 16 : 10;
+        const blurHidden = `blur(${blurPx}px)`;
+        const blurVisible = "blur(0px)";
+        const blurOut = `blur(${Math.round(blurPx * 0.4)}px)`;
         let parallaxCleanup = () => {};
         let tl; // assigned in the desktop branch; activateCapability() only runs there
 
@@ -225,10 +261,14 @@ export default function WhoAreWe() {
         // visible (and at rest, no zoom) from mount straight through the
         // capabilitiesReveal fade-in, so there is never a moment where the
         // (black) stage background is showing with nothing on top of it.
+        // Every photo — including the first — starts softly blurred; it
+        // only sharpens once its own row lights up, so unblurring reads as
+        // "this one's active now" rather than the photo just sitting there
+        // finished before the section has introduced it.
         gsap.set(stageMedia, { clipPath: HIDDEN_CLIP, opacity: 1 });
         gsap.set(stageMedia[0], { clipPath: VISIBLE_CLIP });
-        gsap.set(stageMediaInner, { scale: 1.18 });
-        gsap.set(stageMediaInner[0], { scale: 1 });
+        gsap.set(stageMediaInner, { scale: 1.18, filter: blurHidden });
+        gsap.set(stageMediaInner[0], { scale: 1, filter: blurHidden });
 
         // Light up row i: black fill wipes in, its text flips white, and its
         // photo takes over the stage. Whenever i > 0, the SAME beat sends
@@ -254,15 +294,19 @@ export default function WhoAreWe() {
             .to(capIndices[i], { color: "#ffffff", ease: "power2.out", duration: snap }, start);
 
           if (i === 0) {
+            // Row 0's photo is already resting in the stage — this is a
+            // blur→sharp reveal plus a small confirm pop, not a wipe (there's
+            // nothing to wipe over yet).
             tl.fromTo(
               stageMediaInner[0],
-              { scale: 1.04 },
-              { scale: 1, ease: "power2.out", duration: snap },
+              { scale: 1.04, filter: blurHidden },
+              { scale: 1, filter: blurVisible, ease: "power2.out", duration: wipe },
               start
             );
           } else {
             // Incoming photo sweeps in left-to-right, covering the previous
-            // one as it goes, with a slight zoom-out pop on the image itself.
+            // one as it goes, sharpening out of a soft blur with a slight
+            // zoom-out pop on the image itself.
             tl.fromTo(
               stageMedia[i],
               { clipPath: HIDDEN_CLIP },
@@ -270,19 +314,20 @@ export default function WhoAreWe() {
               start
             ).fromTo(
               stageMediaInner[i],
-              { scale: 1.18 },
-              { scale: 1, ease: "power3.out", duration: wipe },
+              { scale: 1.18, filter: blurHidden },
+              { scale: 1, filter: blurVisible, ease: "power3.out", duration: wipe },
               start
             );
 
-            // Outgoing photo: a small push-back scale starts immediately
-            // (visible briefly through the not-yet-wiped portion), and it
-            // fades the rest of the way out timed to finish exactly as the
-            // wipe finishes covering it — never leaving a gap where the
-            // (black) stage background could show through.
+            // Outgoing photo: a small push-back scale + soft blur starts
+            // immediately (visible briefly through the not-yet-wiped
+            // portion), and it fades the rest of the way out timed to
+            // finish exactly as the wipe finishes covering it — never
+            // leaving a gap where the (black) stage background could show
+            // through.
             tl.to(
               stageMediaInner[i - 1],
-              { scale: 1.08, ease: "power2.in", duration: wipe },
+              { scale: 1.08, filter: blurOut, ease: "power2.in", duration: wipe },
               start
             ).to(
               stageMedia[i - 1],
@@ -450,7 +495,12 @@ export default function WhoAreWe() {
               gsap.to(capLabels[activeIndex], { color: "#0a0a0a", duration: 0.45 });
               gsap.to(capDescs[activeIndex], { color: "rgba(10,10,10,0.46)", duration: 0.45 });
               gsap.to(capIndices[activeIndex], { color: "rgba(10,10,10,0.46)", duration: 0.45 });
-              gsap.to(stageMediaInner[activeIndex], { scale: 1.08, duration: 0.6, ease: "power2.in" });
+              gsap.to(stageMediaInner[activeIndex], {
+                scale: 1.08,
+                filter: blurOut,
+                duration: 0.6,
+                ease: "power2.in",
+              });
               gsap.to(stageMedia[activeIndex], {
                 opacity: 0,
                 duration: 0.35,
@@ -466,8 +516,12 @@ export default function WhoAreWe() {
 
             if (i === 0 && activeIndex === -1) {
               // First activation, first row — the photo is already resting
-              // in the stage (see mount-time gsap.set above); just pop it.
-              gsap.fromTo(stageMediaInner[0], { scale: 1.04 }, { scale: 1, duration: 0.5, ease: "power2.out" });
+              // in the stage (see mount-time gsap.set above); unblur + pop it.
+              gsap.fromTo(
+                stageMediaInner[0],
+                { scale: 1.04, filter: blurHidden },
+                { scale: 1, filter: blurVisible, duration: 0.6, ease: "power2.out" }
+              );
             } else {
               // Guard against a mid-fade-out opacity from a previous visit
               // to this row before the wipe reveals it again.
@@ -479,8 +533,8 @@ export default function WhoAreWe() {
               );
               gsap.fromTo(
                 stageMediaInner[i],
-                { scale: 1.18 },
-                { scale: 1, duration: 0.6, ease: "power3.out" }
+                { scale: 1.18, filter: blurHidden },
+                { scale: 1, filter: blurVisible, duration: 0.6, ease: "power3.out" }
               );
             }
 
@@ -525,6 +579,14 @@ export default function WhoAreWe() {
       aria-labelledby="who-we-are-heading"
       className={`waw-section ${displayFont.variable} ${bodyFont.variable}`}
     >
+      {/* Structured data for the three services — read by crawlers straight
+          from markup, independent of the scroll-linked reveal animation. */}
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(SERVICES_JSON_LD) }}
+      />
+
       <div className="waw-pin" ref={pinRef}>
         <div className="waw-progress" ref={progressTrackRef} aria-hidden="true">
           <span className="waw-progress-dot" ref={progressDotRef} />
@@ -588,7 +650,7 @@ export default function WhoAreWe() {
                       ) : (
                         <Image
                           src={cap.media.src}
-                          alt=""
+                          alt={cap.media.alt || ""}
                           fill
                           loading="lazy"
                           sizes="(min-width: 1024px) 420px, 90vw"

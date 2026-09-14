@@ -1,59 +1,50 @@
 "use client";
 
 /**
- * Requires: npm install gsap@latest   (v3.13+ — SplitText is bundled & free)
+ * Requires: npm install gsap@latest lenis   (v3.13+ — SplitText is bundled & free)
  *
  * next.config.js — needed because inline images use next/image with a remote host:
  *   images: { remotePatterns: [{ protocol: "https", hostname: "picsum.photos" }] }
  *   (swap picsum for your real, self-hosted assets before shipping — a third-party
  *    image host on the critical path hurts LCP, which hurts SEO.)
  *
- * ── What changed vs the previous version (round 7) ────────────────────────────
- * Round 6 fixed the black-flash-on-load, the portrait crop of landscape
- * photos, the plain crossfade, and row alignment (see the bullets further
- * down — still accurate, untouched this round). This pass adds:
+ * ── What changed vs the previous version (round 8) ────────────────────────────
+ * FAST-SCROLL BUG — on a fast fling/trackpad swipe, the "Who are we?"
+ * intro (and sometimes the lede/capability reveals) would never fully
+ * play, or would appear to not trigger at all, and the whole pinned
+ * timeline felt broken at speed. Root cause: `scrub: 1` on a long
+ * (3.4 viewport-heights) pinned timeline gives the tween up to a full
+ * second of lag behind the actual scroll position. On a fast scroll the
+ * real scroll position can blow straight through (or past) the pin's end
+ * before the smoothed tween ever catches up, so the section unpins with
+ * animations mid-flight / never started. Two changes fix this:
  *
- * 5) BLUR-REVEAL ON EVERY PHOTO, INCLUDING THE FIRST ONE — the first
- *    (email marketing) photo used to sit fully sharp at rest, which read
- *    as "done" before the section had even introduced it. Every photo —
- *    including the first — now starts softly blurred and sharpens
- *    exactly when its row lights up, so the unblur itself becomes part
- *    of the "this one's active now" cue. Same blur→sharp treatment on
- *    all three, on both desktop and mobile; the outgoing photo now also
- *    picks up a touch of blur as it's covered, for a bit of depth.
- * 6) SEO — capability photos now carry their real, descriptive alt text
- *    (it was authored per-item in the data but never actually wired into
- *    the <Image>, so every photo was shipping alt=""). Added a JSON-LD
- *    <script> describing the three services as structured data, so
- *    they're machine-readable independent of the scroll-linked reveal.
- * 7) MINOR — blur radius is a touch lighter on mobile (cheaper to
- *    composite on weaker GPUs), and filter is added to the media
- *    elements' will-change hint alongside transform.
+ * 1) `fastScrollEnd: true` added to ScrollTrigger.config — tells GSAP
+ *    that above a velocity threshold, a scrub tween should snap straight
+ *    to its target progress instead of continuing to smooth-lag toward
+ *    it. This is the actual fix for "animation doesn't play on fast
+ *    scroll".
+ * 2) `scrub` dropped from 1 -> 0.35 — a full second of smoothing was
+ *    always too loose for a 3.4vh timeline; 0.35 stays smooth but tracks
+ *    the scrollbar far more tightly, so there's much less lag to blow
+ *    through in the first place.
+ *
+ * These two together fix the animation itself. For the *input* side —
+ * i.e. stopping the browser from ever registering a huge, discontinuous
+ * scroll jump on a fast trackpad fling/wheel flick in the first place —
+ * pair this component with the SmoothScrollProvider (Lenis) at the app
+ * root. See SmoothScrollProvider.jsx — wrap it around {children} in your
+ * root layout once; you don't need to touch it per-section.
+ *
+ * ── Round 7 recap (still current) ──────────────────────────────────────────
+ * Blur-reveal on every capability photo (including the first), real alt
+ * text wired into next/image, and JSON-LD structured data for the three
+ * services.
  *
  * ── Round 6 recap (still current) ──────────────────────────────────────────
- * 1) BLACK FLASH ON FIRST LOAD — round 5 set every stage photo to
- *    opacity 0 on mount, including the first one, so there was a gap
- *    (between the block fading in and cap1 actually starting) where the
- *    stage was visible but showing nothing — a black box. The first
- *    photo now stays visible from mount onward (matching the no-JS
- *    resting state), and activating row 0 no longer re-fades it from
- *    black.
- * 2) PORTRAIT CROP OF LANDSCAPE PHOTOS — the stage used to stretch to
- *    the full height of the (taller) row list at a ~230px width, i.e. a
- *    tall portrait box, which cover-cropped every landscape photo down
- *    to a thin vertical sliver. The stage is now a fixed 4:3 frame at a
- *    wider, more balanced column width, vertically centred next to the
- *    list instead of stretched to match its height.
- * 3) DIRECTIONAL WIPE — swapped the plain opacity crossfade for a
- *    left-to-right clip-path wipe (matching the row fill's direction)
- *    plus a Ken-Burns scale-in pop; the outgoing photo gets a small
- *    push-back scale + fade right as the wipe finishes covering it.
- *    Same idea on both the desktop scrubbed timeline and the mobile
- *    discrete per-row triggers.
- * 4) LAYOUT / ALIGNMENT — row content is now vertically centered
- *    (was baseline, which misaligned the index number against the
- *    two-line descriptions), and the scroll-progress rail is nudged
- *    further out so it stops crowding the list's right edge.
+ * Fixed the black-flash-on-load, the portrait crop of landscape photos,
+ * the plain crossfade (now a directional clip-path wipe + Ken-Burns pop),
+ * and row alignment (centered instead of baseline).
  *
  * Everything else (SplitText intro heading, the lede reveal, the closing
  * line, the background rings + cursor parallax, and the
@@ -70,7 +61,13 @@ import "./WhoAreWe.css";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger, SplitText);
-  ScrollTrigger.config({ ignoreMobileResize: true });
+  // ignoreMobileResize: don't refresh ScrollTrigger on the address-bar-hide
+  // resize that mobile browsers fire on scroll.
+  // fastScrollEnd: on a fast fling, snap a scrub tween straight to its
+  // target progress instead of continuing to smooth-lag toward it — this
+  // is what stops the intro/lede/capability reveals from being skipped or
+  // left mid-animation when someone scrolls quickly.
+  ScrollTrigger.config({ ignoreMobileResize: true, fastScrollEnd: true });
 }
 
 // Self-hosted, deliberately-paired fonts (next/font — no external request,
@@ -354,7 +351,12 @@ export default function WhoAreWe() {
               trigger: pin,
               start: "top top",
               end: () => `+=${Math.round(window.innerHeight * TOTAL_VH)}`,
-              scrub: 1,
+              // Was 1 — a full second of smoothing on a 3.4vh timeline let
+              // fast scrolls blow past the pin before the tween caught up,
+              // which is what made the intro/lede/capability reveals look
+              // like they "didn't play" on quick scrolls. 0.35 keeps the
+              // scrub feel but tracks the scrollbar far more tightly.
+              scrub: 0.35,
               pin: true,
               anticipatePin: 1,
               invalidateOnRefresh: true,

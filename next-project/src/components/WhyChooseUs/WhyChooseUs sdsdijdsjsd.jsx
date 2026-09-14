@@ -391,7 +391,7 @@ export default function WhyChooseUs() {
 
   // ---------------------------------------------------------------
   // Core scroll choreography: Stage 1 color snap + entrance reveals,
-  // Stage 2 snap, Stage 3 marquee (color now fixed — see below).
+  // Stage 2 / Stage 3 snaps + marquee.
   // ---------------------------------------------------------------
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -504,17 +504,12 @@ export default function WhyChooseUs() {
         }
       );
 
-      // ---------- Stage 2 + Stage 3 — synced color snap ----------
-      // The philosophy panel ("upar wala") and the marquee/CTA panel
-      // ("niche wala") are meant to flip color TOGETHER, at the exact
-      // same scroll moment — not on two independent triggers. Two
-      // separate ScrollTriggers (one keyed to quoteRef's own top, one
-      // keyed to marqueeSectionRef's own top) fire at different times
-      // depending on each section's height, which is what caused the
-      // mismatch (one green while the other lagged black, or vice
-      // versa). Driving both elements off ONE trigger — the quote
-      // panel's — keeps them perfectly in lockstep in both directions.
-      gsap.set([quoteRef.current, marqueeSectionRef.current], {
+      // ---------- Stage 2 — philosophy stage ----------
+      // Background SNAPS from black to accent the instant the section
+      // crosses a fixed point (vertical center of the viewport). Not
+      // tied to how far you keep scrolling after that — onEnter fires
+      // once going down, onLeaveBack reverses it once going back up.
+      gsap.set(quoteRef.current, {
         backgroundColor: "#0a0a0a",
         color: "#ffffff",
       });
@@ -522,20 +517,8 @@ export default function WhyChooseUs() {
       ScrollTrigger.create({
         trigger: quoteRef.current,
         start: isMobile ? "top -10%" : "top 10%",
-        onEnter: () =>
-          gsap.to([quoteRef.current, marqueeSectionRef.current], {
-            backgroundColor: "var(--color-accent)",
-            color: "var(--color-ink)",
-            duration: SNAP_DURATION,
-            ease: SNAP_EASE,
-          }),
-        onLeaveBack: () =>
-          gsap.to([quoteRef.current, marqueeSectionRef.current], {
-            backgroundColor: "#0a0a0a",
-            color: "#ffffff",
-            duration: SNAP_DURATION,
-            ease: SNAP_EASE,
-          }),
+        onEnter: () => gsap.to(quoteRef.current, { backgroundColor: "var(--color-accent)", color: "var(--color-on-accent)", duration: SNAP_DURATION, ease: SNAP_EASE }),
+        onLeaveBack: () => gsap.to(quoteRef.current, { backgroundColor: "#0a0a0a", color: "#ffffff", duration: SNAP_DURATION, ease: SNAP_EASE }),
       });
 
       // Masked word-by-word reveal for the quote.
@@ -566,10 +549,32 @@ export default function WhyChooseUs() {
       });
 
       // ---------- Stage 3 — marquee CTA ----------
-      // Color for this panel is already handled above (it's tweened in
-      // lockstep with quoteRef via the shared ScrollTrigger), so there's
-      // no separate color logic here anymore — just the entrance reveal
-      // and the marquee loop itself.
+      // Background SNAPS from accent to black at its own fixed point
+      // (same point-trigger pattern as above).
+      gsap.set(marqueeSectionRef.current, {
+        backgroundColor: "var(--color-accent)",
+        color: "var(--color-ink)",
+      });
+
+      ScrollTrigger.create({
+        trigger: marqueeSectionRef.current,
+        start: isMobile ? "top -10%" : "top 10%",
+        onEnter: () =>
+          gsap.to(marqueeSectionRef.current, {
+            backgroundColor: "#0a0a0a",
+            color: "#ffffff",
+            duration: SNAP_DURATION,
+            ease: SNAP_EASE,
+          }),
+        onLeaveBack: () =>
+          gsap.to(marqueeSectionRef.current, {
+            backgroundColor: "var(--color-accent)",
+            color: "var(--color-ink)",
+            duration: SNAP_DURATION,
+            ease: SNAP_EASE,
+          }),
+      });
+
       gsap.from(`.${styles.marqueeCtaContent}`, {
         opacity: 0,
         y: 24,
@@ -1128,9 +1133,8 @@ export default function WhyChooseUs() {
         </div>
       </div>
 
-      {/* Stage 3 — marquee banner + closing CTA panel. Always black now
-          (see the gsap.set for marqueeSectionRef above) — no accent
-          phase, so it never overlaps visually with Stage 2's green. */}
+      {/* Stage 3 — marquee banner (unchanged), then the closing CTA
+          panel, accent -> black (snap) */}
       <div ref={marqueeSectionRef} className={styles.marqueeSection}>
         <div className={styles.marqueeViewport}>
           <div

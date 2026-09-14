@@ -10,20 +10,11 @@
   --font-serif is used only for the pull-quote; point it at a loaded
   premium editorial serif (Playfair Display, Canela, GT Sectra) via
   next/font if you have one.
-  --font-sans centralizes the grotesk stack used for headings/labels/UI
-  across all three stages so it only has to be swapped in one place. It's
-  set to "Plus Jakarta Sans" below via @import as a drop-in upgrade over
-  the plain system stack — swap this @import + font-family for next/font
-  if you want it self-hosted (better perf, no network round trip / no
-  flash-of-fallback-font on first load).
-  --font-display is a separate token used ONLY by the big Stage 1
-  statement, so that one line gets its own editorial voice (Bricolage
-  Grotesque — a variable font, hence the fractional 650 weight below)
-  without dragging every label/button on the page along with it. If you
-  add real "he sees this everywhere" character to your brand type later,
-  this is the variable to point at your display face.
+  --font-sans and --font-display are supplied by next/font in
+  WhyChooseUs.jsx (self-hosted, no render-blocking @import) via the
+  bricolageGrotesque.variable / plusJakartaSans.variable classes applied
+  to the root .section element — see the component for details.
 */
-@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 
 .section {
   position: relative;
@@ -31,9 +22,6 @@
   --color-ink: #0a0a0a;
   --color-accent: #C0FF4A;
   --font-serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  --font-sans: "Plus Jakarta Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-display: "Bricolage Grotesque", "Plus Jakarta Sans", "Helvetica Neue",
-    Arial, sans-serif;
   --font-mono: "IBM Plex Mono", "JetBrains Mono", ui-monospace,
     SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -467,6 +455,12 @@
   below takes care of. The base (retreat) transition here is the slower,
   unhurried one used when the photo goes back down on mouse-leave/blur.
 
+  The image itself is now rendered via next/image (see
+  .storyCardPhotoImage in the JS) instead of a CSS background-image, so
+  it benefits from lazy loading, responsive sizing and an optimized
+  format — the transform/transition below still drives the reveal
+  exactly as before; only how the pixels get to the screen changed.
+
   IMPORTANT: the transform order is scale() THEN translateY() — CSS
   applies the rightmost function first, so translateY(102%) runs on the
   un-scaled box and THEN the whole thing is scaled up 8% around the
@@ -479,11 +473,14 @@
   position: absolute;
   inset: 0;
   z-index: 1;
-  background-size: cover;
-  background-position: center;
+  overflow: hidden;
   transform: scale(1.08) translateY(102%);
   transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: transform;
+}
+
+.storyCardPhotoImage img {
+  object-fit: cover;
 }
 
 .storyCard:has(.storyPhotoTrigger:hover, .storyPhotoTrigger:focus-visible)
@@ -686,7 +683,8 @@
 }
 
 /* =======================================================================
-  Stage 3 — marquee CTA, accent to black
+  Stage 3 — marquee banner, then a redesigned closing CTA panel,
+  accent to black
   ======================================================================= */
 
 .marqueeSection {
@@ -734,11 +732,42 @@
   font-size: 0.4em;
 }
 
+/* ---------- Closing CTA panel ---------- */
+
 .marqueeCtaContent {
+  position: relative;
   max-width: 760px;
   margin: clamp(56px, 10vw, 100px) auto 0;
   padding: 0 clamp(20px, 6vw, 96px);
   text-align: center;
+}
+
+/* Soft, static glow behind the heading — a quiet accent moment for what
+  is otherwise the plainest stage on the page, without adding any new
+  scroll-triggered motion (it's a fixed radial gradient, not a tween).
+  Sized off the viewport and capped so it never forces horizontal
+  scroll; blurred well past its own edge so it reads as ambient light
+  rather than a hard shape. */
+.marqueeCtaGlow {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(620px, 92vw);
+  height: min(620px, 92vw);
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, var(--color-accent) 0%, transparent 68%);
+  opacity: 0.18;
+  filter: blur(50px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.marqueeHeading,
+.marqueeSub,
+.marqueeServices,
+.marqueeCtaActions {
+  position: relative;
+  z-index: 1;
 }
 
 .marqueeHeading {
@@ -752,22 +781,75 @@
 }
 
 .marqueeSub {
-  margin: 0 0 clamp(32px, 5vw, 48px);
+  margin: 0 0 clamp(36px, 5vw, 52px);
   font-size: clamp(1rem, 1.5vw, 1.15rem);
   line-height: 1.6;
   color: inherit;
   opacity: 0.75;
 }
 
-.ctaButton {
+/* Real list of the four disciplines, reusing the same icon glyphs and
+  tint colors as the Stage 1 statement chips so the close of the page
+  echoes its opening instead of introducing a new visual language this
+  late. Doubles as a plain-language services list right next to the
+  call to action, which is useful for anyone (person or search engine)
+  landing on this section on its own. */
+.marqueeServices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(18px, 3vw, 36px);
+  list-style: none;
+  margin: 0 0 clamp(36px, 5vw, 52px);
+  padding: clamp(18px, 2.4vw, 24px) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.marqueeServiceItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: inherit;
+  opacity: 0.85;
+}
+
+.marqueeServiceIcon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  color: #0a0a0a;
+}
+
+.marqueeServiceIcon svg {
+  width: 56%;
+  height: 56%;
+}
+
+.marqueeCtaActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.ctaButton {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
   background-color: var(--color-accent);
   color: var(--color-ink);
   text-decoration: none;
   border-radius: 999px;
-  padding: 16px 36px;
+  padding: 14px 14px 14px 32px;
   font-family: var(--font-sans);
   font-weight: 700;
   font-size: 1rem;
@@ -787,7 +869,55 @@
   outline-offset: 3px;
 }
 
+.ctaButtonIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background-color: var(--color-ink);
+  color: var(--color-accent);
+}
+
+.ctaButtonIcon svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Secondary path for anyone who'd rather email than click through to a
+  form — a single quiet text link, not a second button, so it stays a
+  clear second choice rather than competing with the primary CTA. */
+.marqueeContactLink {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: inherit;
+  opacity: 0.7;
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  padding-bottom: 1px;
+  transition: opacity 0.25s ease;
+}
+
+.marqueeContactLink:hover,
+.marqueeContactLink:focus-visible {
+  opacity: 1;
+}
+
+.marqueeContactLink:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
 /* ---------- Reduced motion ---------- */
+
+@media (max-width: 640px) {
+  .stage1 {
+    padding-top: 56px;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   .marqueeTrack {

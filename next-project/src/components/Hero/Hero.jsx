@@ -176,7 +176,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
 
         .hero {
-          --paper: #fcfbf8;
+          --paper: #FFFFFF;
           --ink: #14141c;
           --ink-soft: #57575f;
           --line: rgba(20, 20, 28, 0.14);
@@ -338,6 +338,17 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           display: inline-block;
           will-change: transform, opacity, filter;
         }
+
+        @media (max-width: 640px) {
+  .hero {
+    min-height: auto;
+    padding-top: 80px;
+    padding-bottom: 24px;
+  }
+  .hero__stage {
+    padding-bottom: 0;
+  }
+}
 
         @media (prefers-reduced-motion: reduce) {
           .scramble-char { transition: none; }

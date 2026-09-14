@@ -1,0 +1,352 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 1000;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #ffffff;
+  color: #0a0a0a;
+  border-radius: 28px;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.5);
+  padding: 44px 36px 36px;
+  font-family: var(--font-sans, sans-serif);
+  animation: scaleIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.94) translateY(12px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+/* ---------- Close button ---------- */
+
+.closeButton {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 1.5px solid rgba(10, 10, 10, 0.14);
+  background: transparent;
+  color: #0a0a0a;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, transform 0.25s, border-color 0.2s;
+}
+.closeButton:hover {
+  background: #0a0a0a;
+  color: #ffffff;
+  border-color: #0a0a0a;
+  transform: rotate(90deg);
+}
+.closeButton svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- Header + progress ---------- */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.headerEyebrow {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.headerStep {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(10, 10, 10, 0.45);
+}
+
+.progressTrack {
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(10, 10, 10, 0.1);
+  overflow: hidden;
+  margin-bottom: 28px;
+}
+.progressFill {
+  height: 100%;
+  background: #0a0a0a;
+  border-radius: 2px;
+  transition: width 0.35s ease;
+}
+
+/* ---------- Step content ---------- */
+
+@keyframes panelIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.stepPanel {
+  animation: panelIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stepHeading {
+  font-family: var(--font-display, sans-serif);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 6px;
+  line-height: 1.25;
+}
+
+.stepSubheading {
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(10, 10, 10, 0.55);
+  margin: 0 0 24px;
+}
+
+/* ---------- Option cards (steps 1 & 2) ---------- */
+
+.optionGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.optionButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 16px;
+  border-radius: 16px;
+  border: 1.5px solid rgba(10, 10, 10, 0.12);
+  background: #ffffff;
+  color: #0a0a0a;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, color 0.2s, transform 0.15s;
+}
+.optionButton:hover {
+  border-color: rgba(10, 10, 10, 0.4);
+  transform: translateY(-2px);
+}
+.optionButtonActive,
+.optionButtonActive:hover {
+  background: #0a0a0a;
+  border-color: #0a0a0a;
+  color: #ffffff;
+  transform: none;
+}
+
+.optionIconWrap {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(10, 10, 10, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #0a0a0a;
+  transition: background 0.2s, color 0.2s;
+}
+.optionButtonActive .optionIconWrap {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+.optionIcon {
+  width: 18px;
+  height: 18px;
+}
+
+/* ---------- Back link ---------- */
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 18px;
+  background: none;
+  border: none;
+  color: rgba(10, 10, 10, 0.5);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s;
+}
+.backLink:hover {
+  color: #0a0a0a;
+}
+.backLinkIcon {
+  width: 14px;
+  height: 14px;
+}
+
+/* ---------- Form fields (step 3) ---------- */
+
+.field {
+  display: block;
+  margin-bottom: 16px;
+}
+.fieldLabel {
+  display: block;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: rgba(10, 10, 10, 0.5);
+  margin-bottom: 6px;
+}
+.fieldInput,
+.fieldTextarea {
+  width: 100%;
+  background: #ffffff;
+  border: 1.5px solid rgba(10, 10, 10, 0.14);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: #0a0a0a;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.fieldInput::placeholder,
+.fieldTextarea::placeholder {
+  color: rgba(10, 10, 10, 0.32);
+}
+.fieldInput:focus,
+.fieldTextarea:focus {
+  outline: none;
+  border-color: #0a0a0a;
+  box-shadow: 0 0 0 3px rgba(10, 10, 10, 0.08);
+}
+
+.errorBox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 10, 10, 0.04);
+  border: 1px solid rgba(10, 10, 10, 0.1);
+  border-radius: 10px;
+  padding: 10px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #0a0a0a;
+  margin: -2px 0 14px;
+}
+.errorIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.stepActions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 8px;
+}
+
+/* ---------- Buttons ---------- */
+
+.primaryButton {
+  background: #0a0a0a;
+  color: #ffffff;
+  border: 1.5px solid #0a0a0a;
+  border-radius: 999px;
+  padding: 12px 26px;
+  font-size: 14px;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s, opacity 0.2s;
+}
+.primaryButton:hover:not(:disabled) {
+  background: #262626;
+  transform: translateY(-1px);
+}
+.primaryButton:disabled {
+  background: rgba(10, 10, 10, 0.25);
+  border-color: rgba(10, 10, 10, 0.25);
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ---------- Success state ---------- */
+
+.successState {
+  text-align: center;
+  padding: 14px 0 4px;
+}
+.successIcon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 20px;
+  border-radius: 50%;
+  background: #0a0a0a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.successIconSvg {
+  width: 24px;
+  height: 24px;
+}
+.successIconSvg path {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: drawCheck 0.5s ease-out 0.15s forwards;
+}
+@keyframes drawCheck {
+  to { stroke-dashoffset: 0; }
+}
+.successHeading {
+  font-family: var(--font-display, sans-serif);
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px;
+}
+.successText {
+  color: rgba(10, 10, 10, 0.55);
+  font-size: 14px;
+  margin: 0 0 26px;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 480px) {
+  .modal {
+    padding: 36px 24px 28px;
+    border-radius: 22px;
+  }
+  .optionGrid {
+    grid-template-columns: 1fr;
+  }
+}
