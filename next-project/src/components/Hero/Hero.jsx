@@ -370,15 +370,15 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         }
 
         @media (max-width: 640px) {
-          .hero {
-            min-height: auto;
-            padding-top: 80px;
-            padding-bottom: 24px;
-          }
-          .hero__stage {
-            padding-bottom: 0;
-          }
-        }
+  .hero {
+    min-height: auto;
+    padding-top: 28px;
+    padding-bottom: 24px;
+  }
+  .hero__stage {
+    padding-bottom: 0;
+  }
+}
 
         @media (prefers-reduced-motion: reduce) {
           .scramble-char { transition: none; }
