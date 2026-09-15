@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import Image from "next/image";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import gsap from "gsap";
@@ -13,17 +12,6 @@ if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-// Self-hosted via next/font instead of the previous Google Fonts
-// @import in the CSS module — same two families, but no extra
-// render-blocking network round trip and no flash-of-fallback-font on
-// first load. Each font's `variable` name matches the CSS custom
-// property it used to hard-code (--font-display / --font-sans), so
-// nothing else in the stylesheet has to change; the values just arrive
-// via the className applied to the root <section> below instead.
-// Bricolage Grotesque is a variable font (the old @import loaded its
-// opsz/wght axis directly), so no `weight` is passed here — omitting it
-// tells next/font to load the full variable range, which is what lets
-// .statement keep using the in-between font-weight: 650.
 const bricolageGrotesque = Bricolage_Grotesque({
   subsets: ["latin"],
   variable: "--font-display",
@@ -37,24 +25,13 @@ const plusJakartaSans = Plus_Jakarta_Sans({
   display: "swap",
 });
 
-// Small lead-in line that sits above the big statement.
 const KICKER_TEXT =
   "Every project starts with one question — how does this get you more customers?";
 
-// The pull-quote for the philosophy stage (Stage 2, unchanged). Split
-// into words below for a masked line-reveal (each word slides up from
-// underneath a mask).
 const QUOTE_TEXT =
   "A beautiful website that doesn't bring you customers is just an " +
   "expensive brochure.";
 
-// The big statement, tokenized word-by-word so every word — plain or
-// chip-bearing — gets its own mask and can be revealed individually on
-// scroll (see the GSAP block below). A token with a `chip` id renders
-// as a glued word+icon unit via .chipGroup, same as before; a plain
-// token is just a word. Keeping the four-discipline copy here (instead
-// of a separate capability list) means the visible text and the
-// Service schema at the bottom of this file stay in sync automatically.
 const STATEMENT_TOKENS = [
   { text: "We" },
   { text: "combine" },
@@ -81,13 +58,6 @@ const STATEMENT_TOKENS = [
   { text: "up." },
 ];
 
-// Icon + tint for each inline chip. Colors are fixed (not tied to the
-// stage1 light/dark theme vars) since they're standing in for photos —
-// a photo doesn't change with the section's color state, so these
-// shouldn't either. Every icon shares the same stroke weight (1.6) so
-// the set reads as one deliberate family instead of four icons picked
-// up from different places. Reused again for the .marqueeServices list
-// in Stage 3, so the close of the page echoes the opening statement.
 const CHIP_DEFS = {
   web: {
     bg: "#CFE3FF",
@@ -130,10 +100,6 @@ const CHIP_DEFS = {
   },
 };
 
-// Same four disciplines, in copy form, for the closing CTA's services
-// list (Stage 3) — kept as a short separate list (rather than reused
-// verbatim from APPROACH_ITEMS below) since the CTA wants short labels,
-// not the longer descriptive sentence.
 const CTA_SERVICES = [
   { id: "web", label: "Web development" },
   { id: "leads", label: "Lead generation" },
@@ -141,9 +107,6 @@ const CTA_SERVICES = [
   { id: "design", label: "Graphic design" },
 ];
 
-// Inline chip used inside the statement — purely decorative, so it's
-// hidden from assistive tech; the discipline name is already present as
-// real text right before it.
 function Chip({ id }) {
   const def = CHIP_DEFS[id];
   if (!def) return null;
@@ -154,8 +117,6 @@ function Chip({ id }) {
   );
 }
 
-// These four disciplines feed the Service schema below so the
-// structured data matches the copy in STATEMENT_TOKENS above.
 const APPROACH_ITEMS = [
   {
     title: "Web development",
@@ -182,12 +143,6 @@ const APPROACH_ITEMS = [
   },
 ];
 
-// Client stories carousel — replace with real testimonials/photos.
-// `photo` is a placeholder (picsum.photos) standing in for an actual
-// client/project photo; swap each one out before shipping. Rendered via
-// next/image now (see renderStoryGroup), so picsum.photos needs to be
-// added to images.remotePatterns in next.config.js — or just swap these
-// for real photos hosted on a domain you've already allow-listed.
 const STORIES = [
   {
     handle: "@Sarah Bennett",
@@ -236,10 +191,6 @@ const STORIES = [
   },
 ];
 
-// Single five-pointed star, drawn once and reused filled/outlined so the
-// rating reads crisply at any size instead of relying on a font's own
-// glyph metrics (unicode ★/☆ render inconsistently across platforms and
-// can look mismatched in weight/size next to the rest of the UI).
 function StarIcon({ filled }) {
   return (
     <svg
@@ -254,9 +205,6 @@ function StarIcon({ filled }) {
   );
 }
 
-// The icon row itself is aria-hidden — the human-readable rating is
-// announced once via the wrapping element's aria-label (see call sites
-// below), so a screen reader isn't asked to parse five separate glyphs.
 function StarRating({ rating, className }) {
   return (
     <span className={className} aria-hidden="true">
@@ -293,9 +241,6 @@ function PauseIcon() {
   );
 }
 
-// Small trailing arrow used on both CTA buttons (Stage 2's "Let's Talk"
-// and Stage 3's "Start a Project") so the two calls-to-action read as
-// the same family of control.
 function ArrowIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -304,42 +249,24 @@ function ArrowIcon() {
   );
 }
 
-// Repeating phrase for the closing marquee banner. Rendered twice (two
-// identical groups back to back) so an xPercent(-50) loop is seamless.
 const MARQUEE_PHRASE = "Let's build your next website";
 const MARQUEE_REPEAT = 6;
 
-// Shared duration/ease for the point-triggered color snaps below. Set
-// SNAP_DURATION to 0 if you want a literal instant color cut instead of
-// a quick eased transition.
+// Single source of truth for the secondary contact path — previously
+// the mailto: href (hello@zarrar.studio) and the visible link text
+// (isabella.web.devs@gmail.com) were two different addresses. Update
+// this one constant and both stay in sync.
+const CONTACT_EMAIL = "isabella.web.devs@gmail.com";
+
 const SNAP_DURATION = 0.5;
 const SNAP_EASE = "power2.out";
 
-// How long one full loop of the story cards takes to drift by (one pass
-// through a single, non-duplicated set — since the track holds two
-// copies and travels xPercent(-50), this is the time to travel half the
-// track). Bump this up to slow the drift down, or down to speed it up.
 const STORIES_LOOP_DURATION = 14;
 
-// Roughly how long a single card takes to drift past, assuming a
-// constant rate across the loop (the tween's ease is "none", so this
-// holds). Used to step the carousel by exactly "one card" — both from
-// the prev/next buttons and from clicking the left/right half of the
-// viewport.
 const CARD_STEP_DURATION = STORIES_LOOP_DURATION / STORIES.length;
 
-// Hovering a card brings the loop to a full, clean stop (0 = stopped)
-// instead of just slowing it down, so someone can actually read a card
-// without it drifting out from under them. The card currently sitting
-// in the exit-fade zone is still excluded from this (see isExiting
-// below) so you never freeze a half-faded card mid-fade.
 const STORIES_HOVER_TIMESCALE = 0;
 
-// Stage 1 lives in two color states: "light" (the resting state before
-// the section is scrolled into view) and "dark" (snapped once the
-// section crosses the fixed trigger point below). Every themed value in
-// the section is a CSS custom property so the JS only has to flip one
-// set of variables instead of touching a dozen elements.
 const STAGE1_LIGHT_VARS = {
   "--stage1-bg": "#ffffff",
   "--stage1-fg": "#0a0a0a",
@@ -361,59 +288,34 @@ const STAGE1_DARK_VARS = {
 export default function WhyChooseUs() {
   const sectionRef = useRef(null);
 
-  // Stage 1 — statement + client stories carousel
   const stage1Ref = useRef(null);
-  const heroRef = useRef(null); // wraps kicker + statement; used purely
-  // as the color-snap trigger point so "dark" fires when the heading is
-  // centered, independent of the taller section's own top/bottom edges.
+  const heroRef = useRef(null);
   const kickerRef = useRef(null);
   const statementRef = useRef(null);
   const storiesLabelRef = useRef(null);
   const storiesViewportRef = useRef(null);
   const storiesTrackRef = useRef(null);
   const storiesCursorRef = useRef(null);
-  const storyItemRefs = useRef([]); // only the first (real, non-duplicated,
-  // non-aria-hidden) group of cards lives here — see the JSX below.
-  const carouselTweenRef = useRef(null); // exposed outside the effect so
-  // the prev/next/pause buttons can drive the same tween the auto-scroll
-  // effect creates.
+  const storyItemRefs = useRef([]);
+  const carouselTweenRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
 
-  // Stage 2 — philosophy quote
   const quoteRef = useRef(null);
   const quoteTextRef = useRef(null);
   const ctaRef = useRef(null);
 
-  // Stage 3 — marquee CTA
   const marqueeSectionRef = useRef(null);
   const marqueeTrackRef = useRef(null);
 
-  // ---------------------------------------------------------------
-  // Core scroll choreography: Stage 1 color snap + entrance reveals,
-  // Stage 2 snap, Stage 3 marquee (color now fixed — see below).
-  // ---------------------------------------------------------------
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
 
-    // No-JS and reduced-motion visitors get the fully "settled" version
-    // that's already in the CSS: Stage 1 resting dark (see .stage1
-    // defaults), each later stage's final resting color, a static
-    // marquee clipped to one line, and a static (non-looping) row of
-    // story cards. Nothing to wire up in that case.
     if (prefersReducedMotion) return;
 
     const ctx = gsap.context(() => {
-      // Stage 1 starts light. It only snaps dark once the heading block
-      // is actually centered on screen (see heroRef below) — deliberately
-      // NOT tied to the whole (now much taller, statement + carousel)
-      // section, since a "top X%" point on that full tall box would fire
-      // as soon as its top edge passed that line, well before the
-      // heading is visually centered. This section is not pinned —
-      // pinning content taller than one viewport would just clip the
-      // carousel off the bottom of the screen while pinned.
       gsap.set(stage1Ref.current, STAGE1_LIGHT_VARS);
 
       const snapStage1 = (toDark) => {
@@ -443,12 +345,6 @@ export default function WhyChooseUs() {
         scrollTrigger: { trigger: kickerRef.current, start: "top 88%" },
       });
 
-      // Statement — masked word-by-word reveal (mirrors the Stage 2
-      // quote treatment below) instead of the whole line fading up as
-      // one flat block. Each .word span slides up out of its .wordMask
-      // with a touch of rotation for an organic, not-quite-mechanical
-      // feel; a slightly longer duration + power4 easing reads as more
-      // "premium" than the quicker power3 used elsewhere.
       const statementWords = statementRef.current.querySelectorAll(
         `.${styles.word}`
       );
@@ -461,8 +357,6 @@ export default function WhyChooseUs() {
         scrollTrigger: { trigger: statementRef.current, start: "top 85%" },
       });
 
-      // Chip icons pop in with a small bounce just behind their word,
-      // instead of appearing instantly as part of the flat text.
       const statementChips = statementRef.current.querySelectorAll(
         `.${styles.chip}`
       );
@@ -485,10 +379,6 @@ export default function WhyChooseUs() {
         scrollTrigger: { trigger: storiesLabelRef.current, start: "top 92%" },
       });
 
-      // Story cards — small blur-in on top of a fade/rise/stagger for a
-      // softer, more deliberate arrival. Only the first (real) group of
-      // cards is in storyItemRefs, so the duplicated loop-filler group
-      // doesn't double up this animation.
       gsap.fromTo(
         storyItemRefs.current,
         { opacity: 0, y: 36, scale: 0.97, filter: "blur(6px)" },
@@ -504,16 +394,6 @@ export default function WhyChooseUs() {
         }
       );
 
-      // ---------- Stage 2 + Stage 3 — synced color snap ----------
-      // The philosophy panel ("upar wala") and the marquee/CTA panel
-      // ("niche wala") are meant to flip color TOGETHER, at the exact
-      // same scroll moment — not on two independent triggers. Two
-      // separate ScrollTriggers (one keyed to quoteRef's own top, one
-      // keyed to marqueeSectionRef's own top) fire at different times
-      // depending on each section's height, which is what caused the
-      // mismatch (one green while the other lagged black, or vice
-      // versa). Driving both elements off ONE trigger — the quote
-      // panel's — keeps them perfectly in lockstep in both directions.
       gsap.set([quoteRef.current, marqueeSectionRef.current], {
         backgroundColor: "#0a0a0a",
         color: "#ffffff",
@@ -538,7 +418,6 @@ export default function WhyChooseUs() {
           }),
       });
 
-      // Masked word-by-word reveal for the quote.
       const quoteWords = quoteTextRef.current.querySelectorAll(
         `.${styles.word}`
       );
@@ -565,24 +444,26 @@ export default function WhyChooseUs() {
         },
       });
 
-      // ---------- Stage 3 — marquee CTA ----------
-      // Color for this panel is already handled above (it's tweened in
-      // lockstep with quoteRef via the shared ScrollTrigger), so there's
-      // no separate color logic here anymore — just the entrance reveal
-      // and the marquee loop itself.
-      gsap.from(`.${styles.marqueeCtaContent}`, {
-        opacity: 0,
-        y: 24,
-        duration: 0.8,
-        ease: "power3.out",
-        scrollTrigger: {
-          trigger: marqueeSectionRef.current,
-          start: "top 65%",
-        },
-      });
+      gsap.from(
+        [
+          `.${styles.marqueeHeading}`,
+          `.${styles.marqueeSub}`,
+          `.${styles.marqueeServices}`,
+          `.${styles.marqueeCtaActions}`,
+        ],
+        {
+          opacity: 0,
+          y: 24,
+          duration: 0.7,
+          ease: "power3.out",
+          stagger: 0.1,
+          scrollTrigger: {
+            trigger: marqueeSectionRef.current,
+            start: "top 65%",
+          },
+        }
+      );
 
-      // Infinite horizontal loop. Two identical groups sit side by side
-      // in the track, so shifting exactly -50% loops seamlessly.
       const marqueeTween = gsap.to(marqueeTrackRef.current, {
         xPercent: -50,
         ease: "none",
@@ -590,8 +471,8 @@ export default function WhyChooseUs() {
         repeat: -1,
       });
 
-      // A small "awwwards" touch: the marquee subtly speeds up with
-      // scroll velocity, then eases back down.
+      let lastBoost = 1;
+      let idleTimeout;
       ScrollTrigger.create({
         trigger: marqueeSectionRef.current,
         start: "top bottom",
@@ -603,57 +484,55 @@ export default function WhyChooseUs() {
             3.2,
             1 + Math.abs(velocity) / 2000
           );
-          gsap.to(marqueeTween, {
-            timeScale: boost,
-            duration: 0.3,
-            overwrite: true,
-          });
+          // Only spin up a new tween when the boost actually moved —
+          // onUpdate can fire many times per scroll tick, and without
+          // this guard every tick was creating a fresh gsap.to() call.
+          if (Math.abs(boost - lastBoost) > 0.03) {
+            lastBoost = boost;
+            gsap.to(marqueeTween, {
+              timeScale: boost,
+              duration: 0.3,
+              overwrite: true,
+            });
+          }
+          // getVelocity() reports 0 almost immediately after scrolling
+          // stops, but that 0 only reaches here on the NEXT scroll
+          // event — so without this timeout, the marquee stayed sped up
+          // (or slowed down) indefinitely once someone stopped
+          // scrolling mid-tick, instead of settling back to its normal
+          // pace.
+          clearTimeout(idleTimeout);
+          idleTimeout = setTimeout(() => {
+            lastBoost = 1;
+            gsap.to(marqueeTween, { timeScale: 1, duration: 0.6, overwrite: true });
+          }, 120);
         },
       });
     }, sectionRef);
 
-    // Safety net: re-measure trigger positions once everything (webfonts
-    // in particular — they can reflow text after GSAP's first measurement
-    // and throw off "top X%" points) has finished loading.
     const handleLoad = () => ScrollTrigger.refresh();
     window.addEventListener("load", handleLoad);
 
+    // Resize/orientation-change safety net, debounced so a drag-resize
+    // doesn't fire dozens of refreshes in a row. This only re-measures
+    // where each existing trigger's start/end points now fall — it does
+    // not change what triggers them or what they animate, so the
+    // color-snap behavior itself is untouched.
+    let resizeTimeout;
+    const handleResize = () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(() => ScrollTrigger.refresh(), 200);
+    };
+    window.addEventListener("resize", handleResize);
+
     return () => {
       window.removeEventListener("load", handleLoad);
+      window.removeEventListener("resize", handleResize);
+      clearTimeout(resizeTimeout);
       ctx.revert();
     };
   }, []);
 
-  // ---------------------------------------------------------------
-  // Client-stories carousel: a continuous auto-scroll. The track holds
-  // two identical groups of cards back to back (see the JSX) and drifts
-  // left by exactly 50% of its own width on an infinite loop, so it
-  // never visibly "resets" — new cards keep arriving on the right and
-  // old ones fade out on the left (matching the mask-image fade on
-  // .storiesViewport).
-  //
-  // Hovering (or keyboard-focusing) a card brings the loop to a full
-  // stop — see STORIES_HOVER_TIMESCALE — so someone can read a
-  // testimonial without it sliding away. Listeners live on each card
-  // itself (not the shared viewport), so hovering the gaps between
-  // cards does nothing.
-  //
-  // Three ways to move manually, all sharing stepCarousel(): the
-  // prev/next buttons in the header (keyboard- and touch-reachable),
-  // clicking the left/right half of the viewport (desktop, hinted by
-  // the round "Back / Next" cursor), and the pause button, which fully
-  // stops the tween until toggled back on.
-  //
-  // One exception to the hover-stop: whichever card is CURRENTLY sitting
-  // in the narrow exit sliver on the left edge (already partway under
-  // the fade) is left at full speed instead of stopped — freezing it
-  // there would leave a half-faded card hanging, which is exactly the
-  // "looks cut off" look this was built to avoid. This is checked by
-  // live position (getBoundingClientRect), not by which of the 5
-  // testimonials it happens to be — with 5 cards cycling through only 3
-  // visible slots, tying the exception to content instead of position
-  // meant it landed on the wrong slot half the time.
-  // ---------------------------------------------------------------
   useEffect(() => {
     const track = storiesTrackRef.current;
     const viewport = storiesViewportRef.current;
@@ -681,9 +560,6 @@ export default function WhyChooseUs() {
       gsap.to(tween, { timeScale: 1, duration: 0.4, overwrite: true });
     };
 
-    // Roughly matches where .storiesViewport's mask-image starts fading
-    // on the left (8%) plus a little margin, so "exiting" means "already
-    // visibly fading", not just "technically past some invisible line".
     const EXIT_ZONE_RATIO = 0.16;
     const isExiting = (card) => {
       const viewportBounds = viewport.getBoundingClientRect();
@@ -701,19 +577,6 @@ export default function WhyChooseUs() {
     };
     const handleLeave = () => resume();
 
-    // Manual control: step exactly one card back/forward by nudging the
-    // tween's own playhead, instead of re-triggering it from scratch —
-    // this keeps whatever card is mid-transition smooth rather than
-    // snapping.
-    //
-    // Uses totalTime() rather than time(): time() only reports the
-    // position within the CURRENT repeat cycle and resets to 0 at the
-    // start of every loop, so subtracting a step near the start of a
-    // cycle could go negative — GSAP then clamps that to 0 instead of
-    // wrapping into the previous lap, which is why clicking "back" did
-    // nothing whenever the loop happened to be near its seam.
-    // totalTime() counts continuously across repeats, so it can be
-    // nudged in either direction without ever hitting that clamp.
     const stepCarousel = (direction) => {
       gsap.to(tween, {
         totalTime: tween.totalTime() + direction * CARD_STEP_DURATION,
@@ -739,9 +602,6 @@ export default function WhyChooseUs() {
       card.addEventListener("focusout", handleLeave);
     });
 
-    // Exposed on the ref so the header's prev/next/pause buttons (real
-    // JSX elements, not part of this effect's closure) can drive the
-    // same tween.
     tween.stepCarousel = stepCarousel;
 
     return () => {
@@ -757,17 +617,6 @@ export default function WhyChooseUs() {
     };
   }, []);
 
-  // ---------------------------------------------------------------
-  // Round "Back / Next" cursor that follows the pointer over the
-  // carousel — a visual hint that the viewport is click-to-navigate
-  // (see the click-to-step handler above). Mouse-only.
-  //
-  // The position update is throttled to one write per animation frame
-  // with requestAnimationFrame instead of running getBoundingClientRect
-  // + a style write on every single "pointermove" (which can fire far
-  // more often than the screen actually repaints) — same end result,
-  // less main-thread work per frame.
-  // ---------------------------------------------------------------
   useEffect(() => {
     const viewport = storiesViewportRef.current;
     const cursor = storiesCursorRef.current;
@@ -821,11 +670,6 @@ export default function WhyChooseUs() {
     };
   }, []);
 
-  // Header controls: same stepCarousel used by click-to-navigate, plus a
-  // real pause toggle (separate from the hover-stop) so the auto-scroll
-  // is fully under someone's control, not just paused as a side effect
-  // of where their mouse happens to be — matters for anyone relying on
-  // switch access, screen magnification, or just wanting it to stop.
   const handleStep = (direction) => {
     const tween = carouselTweenRef.current;
     if (!tween || tween.paused()) return;
@@ -840,7 +684,6 @@ export default function WhyChooseUs() {
     setIsPaused(nextPaused);
   };
 
-  // JSON-LD mirrors the four disciplines named in the statement above.
   const serviceSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -860,11 +703,36 @@ export default function WhyChooseUs() {
     },
   };
 
-  // Renders one full set of story cards. `duplicate` marks the
-  // loop-filler copy: hidden from assistive tech and pulled out of tab
-  // order so a screen reader / keyboard user only ever encounters each
-  // testimonial once, even though it's visually painted twice for the
-  // seamless loop.
+  // Built from the same STORIES testimonials rendered in the carousel
+  // above, so the structured data can never drift out of sync with what
+  // visitors actually see. This is what lets search engines show a star
+  // rating next to this page in results — a real SEO win the section
+  // didn't have before, and free once the ratings already exist as copy.
+  const averageRating = (
+    STORIES.reduce((sum, story) => sum + story.rating, 0) / STORIES.length
+  ).toFixed(1);
+
+  const organizationSchema = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: "ZARRAR",
+    aggregateRating: {
+      "@type": "AggregateRating",
+      ratingValue: averageRating,
+      reviewCount: STORIES.length,
+    },
+    review: STORIES.map((story) => ({
+      "@type": "Review",
+      author: { "@type": "Person", name: story.handle.replace(/^@/, "") },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: story.rating,
+        bestRating: 5,
+      },
+      reviewBody: story.quote,
+    })),
+  };
+
   const renderStoryGroup = (duplicate) => (
     <div
       className={styles.storiesTrackGroup}
@@ -886,14 +754,6 @@ export default function WhyChooseUs() {
               <path d="M4 24V15.2C4 8.4 8 3.2 14.8 0l2 4C12.4 6.8 10.4 10 10 13.6h6V24H4zm16 0V15.2C20 8.4 24 3.2 30.8 0l2 4c-4.4 2.8-6.4 6-6.8 9.6h6V24H20z" />
             </svg>
 
-            {/* Client name is real content but not a document heading —
-                it's metadata about a testimonial, not a section of the
-                page, so it's a plain paragraph (styled the same as
-                before) rather than an <h3>. Keeps the page's heading
-                outline to h2 (this section) and h3 (the CTA heading
-                below) instead of five extra h3s for names, which is
-                what search engines and screen-reader "jump by heading"
-                navigation actually read as the page's structure. */}
             <div className={styles.storyCardHeading}>
               <p className={styles.storyHandle}>{story.handle}</p>
               <p className={styles.storyRole}>{story.role}</p>
@@ -909,9 +769,6 @@ export default function WhyChooseUs() {
                 <StarRating rating={story.rating} />
               </span>
 
-              {/* The ONLY thing that triggers the photo reveal — see
-                  :has() in the stylesheet. Focusing/hovering it also
-                  pauses the auto-scroll (see the effect above). */}
               <button
                 type="button"
                 className={styles.storyPhotoTrigger}
@@ -943,26 +800,15 @@ export default function WhyChooseUs() {
             aria-label={`Photo shared by ${story.handle}`}
           >
             <div className={styles.storyCardPhotoMask} />
-            {/* next/image instead of a CSS background-image: lazy-loads
-                below the fold, serves a right-sized/right-format image
-                per device, and avoids shipping the full-resolution photo
-                to everyone regardless of viewport. The reveal animation
-                itself is untouched — .storyCardPhotoImage still owns the
-                scale/translate transform, this element just fills it.
-                alt="" because the parent already carries the accessible
-                name via role="img" + aria-label above; a second alt here
-                would just repeat it for screen readers. */}
             <div className={styles.storyCardPhotoImage}>
               <Image
                 src={story.photo}
-                alt=""
+                alt={`${story.handle.replace(/^@/, "")}, ${story.role} — client photo shared with their ZARRAR review`}
                 fill
                 sizes="(max-width: 860px) 80vw, 380px"
+                loading="lazy"
               />
             </div>
-            {/* Keeps the name + rating visible once the photo covers the
-                card, so hovering doesn't strip away whose story this
-                is — the text underneath fades out at the same time. */}
             <div className={styles.storyCardPhotoCaption} aria-hidden="true">
               <p className={styles.storyCardPhotoCaptionName}>{story.handle}</p>
               <StarRating
@@ -988,10 +834,12 @@ export default function WhyChooseUs() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
       />
+      {/* eslint-disable-next-line react/no-danger */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+      />
 
-      {/* Stage 1 — statement + client stories. Resting state is light;
-          it snaps to dark once it crosses the fixed scroll point above
-          (see the color-choreography effect). */}
       <div ref={stage1Ref} className={styles.stage1}>
         <div className={styles.stage1Content}>
           <div ref={heroRef} className={styles.hero}>
@@ -1005,12 +853,6 @@ export default function WhyChooseUs() {
               className={styles.statement}
             >
               {STATEMENT_TOKENS.map((tok, i) => (
-                // Each token is its own mask+word unit (real space text
-                // node after it, not just CSS margin) so the browser
-                // still has a genuine line-break opportunity between
-                // adjacent inline-block spans — without it, words would
-                // never wrap and could overflow the line on narrow
-                // screens.
                 <span key={i}>
                   <span className={styles.wordMask}>
                     <span className={styles.word}>
@@ -1064,13 +906,6 @@ export default function WhyChooseUs() {
               </div>
             </div>
 
-            {/* The track drifts on its own and comes to a full stop when
-                a card itself (not the gaps or faded edges) is hovered or
-                focused, or when the pause button above is toggled on —
-                see the effects above. Click the left/right half to step
-                manually; the round cursor is the visual hint for that.
-                The mask-image fade on .storiesViewport is what keeps the
-                leading/trailing card from ever looking "chopped". */}
             <div
               className={styles.storiesCarousel}
               role="region"
@@ -1095,7 +930,6 @@ export default function WhyChooseUs() {
         </div>
       </div>
 
-      {/* Stage 2 — philosophy / pull-quote panel, black -> accent (snap) */}
       <div ref={quoteRef} className={styles.quoteStage}>
         <div className={styles.quoteInner}>
           <span className={styles.quoteLabel}>Our philosophy</span>
@@ -1128,9 +962,6 @@ export default function WhyChooseUs() {
         </div>
       </div>
 
-      {/* Stage 3 — marquee banner + closing CTA panel. Always black now
-          (see the gsap.set for marqueeSectionRef above) — no accent
-          phase, so it never overlaps visually with Stage 2's green. */}
       <div ref={marqueeSectionRef} className={styles.marqueeSection}>
         <div className={styles.marqueeViewport}>
           <div
@@ -1151,14 +982,6 @@ export default function WhyChooseUs() {
           </div>
         </div>
 
-        {/* Redesigned closing panel: a soft accent glow behind the
-            heading, the same four discipline icons used in the Stage 1
-            statement (so the page's opening and closing echo each
-            other), and a primary + secondary call to action instead of
-            a single button on its own. The outer .marqueeCtaContent
-            div keeps its original class name, since that's what the
-            GSAP entrance animation above selects by — only what's
-            inside it changed. */}
         <div className={styles.marqueeCtaContent}>
           <div className={styles.marqueeCtaGlow} aria-hidden="true" />
 
@@ -1186,21 +1009,19 @@ export default function WhyChooseUs() {
           </ul>
 
           <div className={styles.marqueeCtaActions}>
-            {/* Swap the href for your actual contact route */}
             <button
               type="button"
               className={styles.ctaButton}
               onClick={() => setIsContactOpen(true)}
             >
-              Start a Project
+              <span className={styles.ctaButtonFill} aria-hidden="true" />
+              <span className={styles.ctaButtonLabel}>Start a Project</span>
               <span className={styles.ctaButtonIcon} aria-hidden="true">
                 <ArrowIcon />
               </span>
             </button>
-            {/* Swap for your real inbox — a quiet second path for anyone
-                who'd rather email than fill out a form. */}
-            <a href="mailto:hello@zarrar.studio" className={styles.marqueeContactLink}>
-              Or email isabella.web.devs@gmail.com
+            <a href={`mailto:${CONTACT_EMAIL}`} className={styles.marqueeContactLink}>
+              Or email {CONTACT_EMAIL}
             </a>
           </div>
         </div>

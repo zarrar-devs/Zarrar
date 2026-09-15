@@ -8,42 +8,30 @@ import {
   useMemo,
   useRef,
 } from "react";
-import Link from "next/link";
-import { Bricolage_Grotesque } from "next/font/google";
 import gsap from "gsap";
 
 /**
- * Hero — v8
+ * Hero — v7
  *
- * What changed vs v7:
- *  - The Bricolage Grotesque display face is now loaded via
- *    next/font/google instead of the render-blocking `@import` — v7's
- *    own comments already flagged this as the intended next step. This
- *    self-hosts the font (no third-party request), removes the
- *    render-blocking `@import`, and gives the headline — almost
- *    certainly the page's LCP element — a matched-metric fallback that
- *    next/font generates automatically, cutting the layout shift a
- *    cross-origin swap would otherwise cause. Exposed the same way
- *    Space Grotesk already is elsewhere: as a CSS variable
- *    (`--font-bricolage`) via `displayFont.variable`, scoped to this
- *    section.
- *  - The logo mark is now a real link to "/" (via next/link) instead of
- *    a plain span — crawlable, and standard behaviour for a site mark.
- *  - The menu button's hit area is now a full 44×44px (was ~30×25px,
- *    under the usual minimum recommended touch-target size) without
- *    changing how the icon looks — the bars are sized independently of
- *    the button's box now. Also added `type="button"` so it can never
- *    accidentally submit a form if this ever ends up inside one.
- *  - The sub-copy's word-by-word reveal no longer leaves a trailing
- *    &nbsp; after the very last word.
- *  - The scroll handler that re-measures every letter's position now
- *    batches through requestAnimationFrame instead of running on every
- *    single scroll event, so a fast scroll doesn't force a
- *    getBoundingClientRect() layout read per letter per event.
- *  - The headline's font-size floor is lowered slightly (2.75rem →
- *    2.3rem); it only changes anything below ~460px-wide viewports —
- *    everything from small phones up through desktop renders pixel-
- *    identical to before.
+ * What changed vs v6:
+ *  - The three-image collage is gone (kept adding weight without
+ *    earning it — pulled per feedback). Back to a pure-typography hero.
+ *  - .hero is now a flex column with min-height: 100dvh (100vh fallback)
+ *    and .hero__stage centers .hero__content vertically in the space
+ *    below the nav — previously the section just grew as tall as its
+ *    content needed and the copy could end up sitting low/off-balance
+ *    on short viewports. Now it always reads as one composed screen.
+ *  - Headline now has its own display face (Bricolage Grotesque, via
+ *    an @import — see the CSS for a note on moving this to next/font)
+ *    distinct from the Space Grotesk body copy, per "two families,
+ *    clearly distinct."
+ *  - The load-in is no longer just the headline's mask-reveal: once
+ *    ScrambleHeadline finishes measuring (see its settle()), it also
+ *    fires a one-time decode wave across every letter — reusing its
+ *    own hover-decode mechanism, just triggered by mount instead of
+ *    the cursor. So letters are still resolving out of glyph-noise as
+ *    their word rises out of its mask. That's additive: nothing about
+ *    the existing hover-decode trigger changed.
  *
  * What did NOT change: ScrambleHeadline's width-lock-after-fonts-ready
  * and text-content-keyed setup effect are the fix for a real bug (see
@@ -54,17 +42,6 @@ import gsap from "gsap";
  *  - revealed: whether the page's own entrance settle should play.
  *    True by default; Preloader sets this explicitly via cloneElement.
  */
-
-// Self-hosted, variable-weight display face for the headline only — body
-// copy stays on the existing Space Grotesk (loaded the same way
-// elsewhere and exposed as --font-space-grotesk). Scoped to this
-// section via displayFont.variable on the <section>, same pattern as
-// the site's other components.
-const displayFont = Bricolage_Grotesque({
-  subsets: ["latin"],
-  variable: "--font-bricolage",
-  display: "swap",
-});
 
 const SUB_COPY =
   "A design studio building websites, email systems, and identities for brands that don't blend in.";
@@ -186,8 +163,18 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
   }, [revealed]);
 
   return (
-    <section className={`hero ${displayFont.variable}`} ref={ref}>
+    <section className="hero" ref={ref}>
       <style>{`
+        /* Display face for the headline only — body copy stays on the
+           existing Space Grotesk. This @import is the quick, drop-in
+           way to get a second family into a single component file;
+           it's render-blocking, so once this settles, move it into
+           next/font/google in your root layout (that also lets you
+           drop this @import and the manual font-display entirely) and
+           expose it the same way --font-space-grotesk is already
+           exposed, e.g. as --font-bricolage. */
+        @import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
+
         .hero {
           --paper: #FFFFFF;
           --ink: #14141c;
@@ -198,7 +185,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           --gold: #c98d00;
           --font: var(--font-space-grotesk), ui-sans-serif, system-ui,
             -apple-system, "Segoe UI", sans-serif;
-          --font-display: var(--font-bricolage), var(--font);
+          --font-display: "Bricolage Grotesque", var(--font);
 
           position: relative;
           display: flex;
@@ -238,30 +225,19 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           font-weight: 700;
           font-size: 1.05rem;
           letter-spacing: 0.03em;
-          color: inherit;
-          text-decoration: none;
         }
-        /* 44x44 is the usual minimum recommended touch-target size — the
-           button itself now provides that hit area, independent of how
-           big the two visible bars are, so the icon doesn't need to
-           grow just to be easier to tap. */
         .hero__menu {
           display: flex;
           flex-direction: column;
-          align-items: center;
-          justify-content: center;
           gap: 5px;
-          width: 44px;
-          height: 44px;
-          margin: 0 -7px;
-          padding: 0;
+          width: 30px;
+          padding: 8px 0;
           background: none;
           border: none;
           cursor: pointer;
         }
         .hero__menu span {
           display: block;
-          width: 22px;
           height: 2px;
           background: var(--ink);
           transition: transform 0.2s ease, opacity 0.2s ease;
@@ -299,13 +275,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           margin: 0;
           font-family: var(--font-display);
           font-weight: 700;
-          /* Floor lowered from 2.75rem — only takes effect under
-             ~460px-wide viewports (2.75rem / 0.07 ≈ 460px is where the
-             vw term overtakes it), so this line renders identically to
-             before on every phone/tablet/desktop width above that; it
-             just stops the two headline lines wrapping quite so many
-             times on the narrowest phones. */
-          font-size: clamp(2.3rem, 7vw, 6.5rem);
+          font-size: clamp(2.75rem, 7vw, 6.5rem);
           line-height: 1.05;
           letter-spacing: -0.02em;
         }
@@ -370,15 +340,15 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         }
 
         @media (max-width: 640px) {
-          .hero {
-            min-height: auto;
-            padding-top: 80px;
-            padding-bottom: 24px;
-          }
-          .hero__stage {
-            padding-bottom: 0;
-          }
-        }
+  .hero {
+    min-height: auto;
+    padding-top: 80px;
+    padding-bottom: 24px;
+  }
+  .hero__stage {
+    padding-bottom: 0;
+  }
+}
 
         @media (prefers-reduced-motion: reduce) {
           .scramble-char { transition: none; }
@@ -386,15 +356,10 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
       `}</style>
 
       <header className="hero__nav">
-        <Link href="/" className="hero__mark" ref={navMarkRef} aria-label="Zarrar — home">
+        <span className="hero__mark" ref={navMarkRef}>
           ZARRAR
-        </Link>
-        <button
-          type="button"
-          className="hero__menu"
-          ref={navMenuRef}
-          aria-label="Open menu"
-        >
+        </span>
+        <button className="hero__menu" ref={navMenuRef} aria-label="Open menu">
           <span />
           <span />
         </button>
@@ -408,12 +373,9 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
 
           <p className="hero__sub" ref={subRef}>
             <span aria-hidden="true">
-              {SUB_COPY.split(" ").map((word, i, words) => (
+              {SUB_COPY.split(" ").map((word, i) => (
                 <span className="word-mask" key={i}>
-                  <span className="word-inner">
-                    {word}
-                    {i < words.length - 1 ? "\u00A0" : ""}
-                  </span>
+                  <span className="word-inner">{word}&nbsp;</span>
                 </span>
               ))}
             </span>
@@ -586,18 +548,7 @@ function ScrambleHeadline({ lines, className }) {
         measure();
       }, 120);
     };
-    // Batched through rAF so a fast scroll can't force a
-    // getBoundingClientRect() layout read (inside measure(), once per
-    // letter) on every single scroll event — at most once per frame.
-    let scrollScheduled = false;
-    const handleScroll = () => {
-      if (scrollScheduled) return;
-      scrollScheduled = true;
-      requestAnimationFrame(() => {
-        measure();
-        scrollScheduled = false;
-      });
-    };
+    const handleScroll = () => measure();
     const handleMove = (e) => {
       mouse.current.x = e.pageX;
       mouse.current.y = e.pageY;

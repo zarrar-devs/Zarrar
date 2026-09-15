@@ -8,33 +8,64 @@
  *   (swap picsum for your real, self-hosted assets before shipping — a third-party
  *    image host on the critical path hurts LCP, which hurts SEO.)
  *
- * ── What changed vs the previous version (round 8) ────────────────────────────
- * FAST-SCROLL BUG — on a fast fling/trackpad swipe, the "Who are we?"
- * intro (and sometimes the lede/capability reveals) would never fully
- * play, or would appear to not trigger at all, and the whole pinned
- * timeline felt broken at speed. Root cause: `scrub: 1` on a long
- * (3.4 viewport-heights) pinned timeline gives the tween up to a full
- * second of lag behind the actual scroll position. On a fast scroll the
- * real scroll position can blow straight through (or past) the pin's end
- * before the smoothed tween ever catches up, so the section unpins with
- * animations mid-flight / never started. Two changes fix this:
+ * ── What changed vs the previous version (round 10) ───────────────────────────
+ * 1) REAL FIX for the "Who are we?" misalignment/jump — the actual bug
+ *    (found by reviewing a screen recording) had nothing to do with font
+ *    size. The intro heading's exit-slide moved it left by exactly its
+ *    own rendered width (`-(introEl.offsetWidth + BUFFER)`), which only
+ *    fully clears the viewport when the heading happens to be wider than
+ *    roughly 1.5x the viewport width. At the original large font size on
+ *    a wide-enough screen that was coincidentally true; at smaller sizes
+ *    (or on some laptop widths) it wasn't, so the tail end of the heading
+ *    was left stranded on screen, overlapping later content — exactly the
+ *    "we?" hanging around next to the capability list seen in the
+ *    recording. The exit distance is now computed from the viewport's own
+ *    half-width plus half the heading's width, which guarantees full
+ *    clearance regardless of the heading's size. Round 9's height-based
+ *    font shrink is reverted back down to a single, much gentler
+ *    safety-net breakpoint (`max-height: 640px`) instead of a formula that
+ *    was cutting the heading down by 30-40% on ordinary laptop screens.
+ * 2) SCROLL HINT, PROPERLY VISIBLE THIS TIME — round 9 tied the hint's
+ *    fade in/out to scroll *progress*, so at normal scroll speed it was
+ *    on screen for well under half a second — technically there, but not
+ *    actually readable. It's now driven by the ScrollTrigger's
+ *    `onEnter`/`onEnterBack` callbacks instead of the scrubbed timeline:
+ *    it fades in the instant the section pins, holds for a fixed ~2
+ *    seconds of real time, then fades out — regardless of how fast or
+ *    slow the person scrolls.
+ * 3) SLOWER, LESS RUSHED PACING — `TOTAL_VH` (how much physical scrolling
+ *    the whole pinned story takes) is raised from 3.4 to 5.5 viewport-
+ *    heights. Every phase's proportions stay the same, but each one now
+ *    takes noticeably more scrolling to play out, so the reveals feel
+ *    slower and less rushed for the same scroll input.
+ * 4) ANIMATION POLISH — the progress-rail dot now tracks scroll through a
+ *    `gsap.quickTo` tween instead of being hard-set every frame, so it
+ *    glides instead of ticking; the "Who" highlight now lands with a
+ *    slight overshoot (`back.out`) instead of a flat ease-out; the
+ *    capability photo wipes use `expo` easing for a smoother sweep; the
+ *    capability stage + list now scale in slightly (0.97 → 1) alongside
+ *    their existing fade, instead of just fading; and each capability's
+ *    photo keeps a slow, continuous Ken-Burns drift for the rest of its
+ *    hold instead of going fully static the instant its reveal finishes.
+ *    Mobile's per-row reveals were brought in line with the same easing
+ *    so both breakpoints feel like one animation language.
+ * 4) SEO — the services JSON-LD now wraps each service in a proper
+ *    `ListItem` (schema.org's actual shape for `ItemList`, rather than
+ *    dropping `Service` entries straight into `itemListElement`), and
+ *    each capability photo's `alt` now falls back to its label instead of
+ *    an empty string, since these are meaningful content images, not
+ *    decorative ones.
+ * 5) RESPONSIVE — added a mid-width (1024–1180px) breakpoint so the
+ *    two-column layout doesn't feel cramped right at the desktop
+ *    threshold, and the progress-rail dot's travel distance is now
+ *    measured from the actual rendered track/dot height at runtime
+ *    instead of a hardcoded pixel pair that had to be kept in sync with
+ *    the CSS by hand.
  *
- * 1) `fastScrollEnd: true` added to ScrollTrigger.config — tells GSAP
- *    that above a velocity threshold, a scrub tween should snap straight
- *    to its target progress instead of continuing to smooth-lag toward
- *    it. This is the actual fix for "animation doesn't play on fast
- *    scroll".
- * 2) `scrub` dropped from 1 -> 0.35 — a full second of smoothing was
- *    always too loose for a 3.4vh timeline; 0.35 stays smooth but tracks
- *    the scrollbar far more tightly, so there's much less lag to blow
- *    through in the first place.
- *
- * These two together fix the animation itself. For the *input* side —
- * i.e. stopping the browser from ever registering a huge, discontinuous
- * scroll jump on a fast trackpad fling/wheel flick in the first place —
- * pair this component with the SmoothScrollProvider (Lenis) at the app
- * root. See SmoothScrollProvider.jsx — wrap it around {children} in your
- * root layout once; you don't need to touch it per-section.
+ * ── Round 8 recap (still current) ──────────────────────────────────────────
+ * fastScrollEnd + scrub 0.35 (was 1) so a fast fling can't blow through the
+ * pin before the scrub tween catches up — pair with SmoothScrollProvider
+ * (Lenis) at the app root for the input side of the same fix.
  *
  * ── Round 7 recap (still current) ──────────────────────────────────────────
  * Blur-reveal on every capability photo (including the first), real alt
@@ -46,8 +77,8 @@
  * the plain crossfade (now a directional clip-path wipe + Ken-Burns pop),
  * and row alignment (centered instead of baseline).
  *
- * Everything else (SplitText intro heading, the lede reveal, the closing
- * line, the background rings + cursor parallax, and the
+ * Everything else (SplitText intro heading structure, the lede reveal, the
+ * closing line, the background rings + cursor parallax, and the
  * prefers-reduced-motion / no-JS handling via matchMedia) is untouched.
  */
 
@@ -104,10 +135,17 @@ const PHASE = {
   closingReveal: [0.88, 0.98],
 };
 const span = (k) => PHASE[k][1] - PHASE[k][0];
-const TOTAL_VH = 3.4; // viewport-heights of scroll the whole story consumes
+// Was 3.4 — the whole pinned story played out too fast for a natural scroll
+// speed. Same phase proportions, just spread over more physical scrolling,
+// so every reveal (including the scroll hint's window) has more room to
+// actually register instead of flashing by.
+const TOTAL_VH = 5.5; // viewport-heights of scroll the whole story consumes
 const BUFFER = 80;
-const PROGRESS_TRACK_PX = 120; // keep in sync with .waw-progress height in the CSS
-const PROGRESS_DOT_PX = 8; // keep in sync with .waw-progress-dot size in the CSS
+// Sane fallbacks only — the progress dot's real travel distance is measured
+// from the rendered track/dot at runtime (see measureProgressTrack below),
+// so these no longer need to be hand-kept in sync with the CSS.
+const PROGRESS_TRACK_PX = 120;
+const PROGRESS_DOT_PX = 8;
 
 // The lede is the one idea worth saying big. Kept to two short lines on
 // purpose — everything else lives in the capability list below it.
@@ -115,6 +153,10 @@ const LEDE_LINES = [
   { text: "From qualified leads to a digital presence people actually trust,", accent: false },
   { text: "we're the team that runs the whole engine.", accent: true },
 ];
+
+// Shown briefly right as the pinned scroll begins, before "Who are we?"
+// reveals — purely a UX nudge for the scroll-jacked desktop experience.
+const SCROLL_HINT_TEXT = "Scroll slowly for the best experience";
 
 const CAPABILITIES = [
   {
@@ -163,15 +205,21 @@ const HIDDEN_CLIP = "inset(0% 0% 0% 100%)";
 const VISIBLE_CLIP = "inset(0% 0% 0% 0%)";
 
 // Structured data so search engines can read the three services directly,
-// independent of the scroll-linked reveal animation.
+// independent of the scroll-linked reveal animation. Each service is
+// wrapped in a ListItem, which is schema.org's actual shape for ItemList
+// (rather than dropping Service entries straight into itemListElement).
 const SERVICES_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "ItemList",
+  name: "Services",
   itemListElement: CAPABILITIES.map((cap, i) => ({
-    "@type": "Service",
+    "@type": "ListItem",
     position: i + 1,
-    name: cap.label,
-    description: cap.description,
+    item: {
+      "@type": "Service",
+      name: cap.label,
+      description: cap.description,
+    },
   })),
 };
 
@@ -182,6 +230,7 @@ export default function WhoAreWe() {
   const highlightRef = useRef(null);
   const storyRef = useRef(null);
   const ledeLineRefs = useRef([]);
+  const scrollHintRef = useRef(null);
   const capabilityBlockRef = useRef(null);
   const capabilitiesListRef = useRef(null);
   const mediaStageRef = useRef(null);
@@ -208,6 +257,7 @@ export default function WhoAreWe() {
         const highlight = highlightRef.current;
         const story = storyRef.current;
         const ledeLines = ledeLineRefs.current.filter(Boolean);
+        const scrollHint = scrollHintRef.current;
         const closing = closingRef.current;
         const ringsLayer = ringsLayerRef.current;
         const progressDot = progressDotRef.current;
@@ -237,6 +287,7 @@ export default function WhoAreWe() {
         const blurVisible = "blur(0px)";
         const blurOut = `blur(${Math.round(blurPx * 0.4)}px)`;
         let parallaxCleanup = () => {};
+        let driftTween = null; // mobile's continuous Ken-Burns drift on the active photo
         let tl; // assigned in the desktop branch; activateCapability() only runs there
 
         const splitRest = new SplitText(introRest, { type: "chars", charsClass: "waw-char" });
@@ -250,7 +301,8 @@ export default function WhoAreWe() {
         });
         gsap.set(highlight, { autoAlpha: 0, x: -40 });
         gsap.set(ledeLines, { yPercent: 130, opacity: 0 });
-        gsap.set(revealTargets, { opacity: 0, y: "1.4rem", filter: "blur(10px)" });
+        gsap.set(scrollHint, { autoAlpha: 0, y: 8 });
+        gsap.set(revealTargets, { opacity: 0, y: "1.4rem", scale: 0.97, filter: "blur(10px)" });
         gsap.set(fills, { scaleX: 0 });
         gsap.set(closing, { opacity: 0, y: "1rem", filter: "blur(6px)" });
 
@@ -274,7 +326,9 @@ export default function WhoAreWe() {
         // (or none) at once. Row 0 is the exception: its photo is already
         // resting in the stage from mount (see above), so lighting it up
         // only needs the row styling plus a small confirm pop on the photo
-        // — not a full wipe-in.
+        // — not a full wipe-in. Whichever photo ends up active keeps a
+        // slow, continuous Ken-Burns drift for the rest of its hold, so it
+        // never goes fully static the instant its own reveal finishes.
         const activateCapability = (i, phaseKey) => {
           const [start] = PHASE[phaseKey];
           const dur = span(phaseKey);
@@ -284,6 +338,8 @@ export default function WhoAreWe() {
           // than a blink — the row still "arrives" quickly, the photo
           // follows through.
           const wipe = dur * 0.65;
+          const driftStart = start + wipe;
+          const driftDur = Math.max(dur - wipe, 0);
 
           tl.to(fills[i], { scaleX: 1, ease: "power4.out", duration: snap }, start)
             .to(capLabels[i], { color: "#ffffff", ease: "power2.out", duration: snap }, start)
@@ -297,7 +353,7 @@ export default function WhoAreWe() {
             tl.fromTo(
               stageMediaInner[0],
               { scale: 1.04, filter: blurHidden },
-              { scale: 1, filter: blurVisible, ease: "power2.out", duration: wipe },
+              { scale: 1, filter: blurVisible, ease: "expo.out", duration: wipe },
               start
             );
           } else {
@@ -307,12 +363,12 @@ export default function WhoAreWe() {
             tl.fromTo(
               stageMedia[i],
               { clipPath: HIDDEN_CLIP },
-              { clipPath: VISIBLE_CLIP, ease: "power4.inOut", duration: wipe },
+              { clipPath: VISIBLE_CLIP, ease: "expo.inOut", duration: wipe },
               start
             ).fromTo(
               stageMediaInner[i],
               { scale: 1.18, filter: blurHidden },
-              { scale: 1, filter: blurVisible, ease: "power3.out", duration: wipe },
+              { scale: 1, filter: blurVisible, ease: "expo.out", duration: wipe },
               start
             );
 
@@ -333,6 +389,12 @@ export default function WhoAreWe() {
             );
           }
 
+          // Continuous drift for the remainder of this row's hold. Skipped
+          // when a phase is too tight to give it any real room.
+          if (driftDur > 0.01) {
+            tl.to(stageMediaInner[i], { scale: 1.05, ease: "none", duration: driftDur }, driftStart);
+          }
+
           if (i > 0) {
             tl.to(fills[i - 1], { scaleX: 0, ease: "power3.inOut", duration: snap }, start)
               .to(capLabels[i - 1], { color: "#0a0a0a", ease: "power2.inOut", duration: snap }, start)
@@ -345,6 +407,24 @@ export default function WhoAreWe() {
           pin.classList.add("is-marquee");
           stage.classList.add("is-marquee");
           progressTrackRef.current?.classList.add("is-visible");
+
+          // The progress dot's travel distance is measured from the actual
+          // rendered track/dot rather than a hardcoded pixel pair, so it
+          // can't drift out of sync with the CSS. Re-measured on every
+          // ScrollTrigger refresh (resize, font load, breakpoint change).
+          let trackMetrics = { height: PROGRESS_TRACK_PX, dot: PROGRESS_DOT_PX };
+          const measureProgressTrack = () => {
+            if (!progressTrackRef.current || !progressDotRef.current) return;
+            trackMetrics = {
+              height: progressTrackRef.current.clientHeight || PROGRESS_TRACK_PX,
+              dot: progressDotRef.current.clientHeight || PROGRESS_DOT_PX,
+            };
+          };
+          measureProgressTrack();
+          // quickTo glides the dot toward each new position instead of
+          // snapping it every scroll tick, which is what made it feel like
+          // it was ticking rather than tracking.
+          const setDotY = gsap.quickTo(progressDot, "y", { duration: 0.18, ease: "power2.out" });
 
           tl = gsap.timeline({
             scrollTrigger: {
@@ -360,17 +440,49 @@ export default function WhoAreWe() {
               pin: true,
               anticipatePin: 1,
               invalidateOnRefresh: true,
+              onRefresh: measureProgressTrack,
               onUpdate: (self) => {
-                gsap.set(progressDot, { y: self.progress * (PROGRESS_TRACK_PX - PROGRESS_DOT_PX) });
+                setDotY(self.progress * (trackMetrics.height - trackMetrics.dot));
               },
+              // The hint is driven by real elapsed time (below), not scroll
+              // progress, so it reliably gets a couple of readable seconds
+              // on screen no matter how fast someone scrolls into the
+              // section. onEnter/onEnterBack cover scrolling in from either
+              // direction.
+              onEnter: () => showScrollHint(),
+              onEnterBack: () => showScrollHint(),
             },
           });
 
-          // Act 1 — "Who are we?" (unchanged)
+          // Fades the hint in, holds it for a fixed real-world duration,
+          // then fades it out — completely independent of the scrubbed
+          // timeline above, so scroll speed can't cut it short.
+          const showScrollHint = () => {
+            if (!scrollHint) return;
+            gsap.killTweensOf(scrollHint);
+            gsap
+              .timeline()
+              .to(scrollHint, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power2.out" })
+              .to(scrollHint, { autoAlpha: 0, y: -8, duration: 0.5, ease: "power2.in" }, "+=1.8");
+          };
+
+          // Act 1 — "Who are we?"
+          // Exit distance is measured from the viewport's own half-width
+          // plus half the heading's width, not just the heading's own
+          // width — moving left by only "its own width" only clears the
+          // screen when the heading happens to be wider than roughly 1.5x
+          // the viewport, which isn't reliably true at every font size /
+          // screen width. This guarantees the heading is fully off-screen
+          // (past the left edge, with BUFFER to spare) no matter how wide
+          // it renders.
           tl.fromTo(
             introEl,
             { x: () => window.innerWidth + BUFFER },
-            { x: () => -(introEl.offsetWidth + BUFFER), ease: "none", duration: span("introSlide") },
+            {
+              x: () => -(window.innerWidth / 2 + introEl.offsetWidth / 2 + BUFFER),
+              ease: "none",
+              duration: span("introSlide"),
+            },
             PHASE.introSlide[0]
           );
           tl.to(
@@ -387,7 +499,7 @@ export default function WhoAreWe() {
             PHASE.introReveal[0]
           ).to(
             highlight,
-            { autoAlpha: 1, x: 0, ease: "power3.out", duration: span("introReveal") * 0.8 },
+            { autoAlpha: 1, x: 0, ease: "back.out(1.7)", duration: span("introReveal") * 0.9 },
             PHASE.introReveal[0]
           );
 
@@ -414,6 +526,7 @@ export default function WhoAreWe() {
             {
               opacity: 1,
               y: 0,
+              scale: 1,
               filter: "blur(0px)",
               ease: "power2.out",
               duration: span("capabilitiesReveal"),
@@ -450,8 +563,8 @@ export default function WhoAreWe() {
           // Subtle cursor parallax on the ring layer — only for real mice,
           // so touch-capable laptops at desktop widths don't get a stuck offset.
           if (window.matchMedia("(pointer: fine)").matches) {
-            const px = gsap.quickTo(ringsLayer, "x", { duration: 0.9, ease: "power3.out" });
-            const py = gsap.quickTo(ringsLayer, "y", { duration: 0.9, ease: "power3.out" });
+            const px = gsap.quickTo(ringsLayer, "x", { duration: 1.1, ease: "power2.out" });
+            const py = gsap.quickTo(ringsLayer, "y", { duration: 1.1, ease: "power2.out" });
             const onMove = (e) => {
               const relX = e.clientX / window.innerWidth - 0.5;
               const relY = e.clientY / window.innerHeight - 0.5;
@@ -470,15 +583,16 @@ export default function WhoAreWe() {
               y: 0,
               yPercent: 0,
               opacity: 1,
+              scale: 1,
               filter: "blur(0px)",
-              ease: "power2.out",
+              ease: "expo.out",
               duration: 0.7,
               ...extra,
               scrollTrigger: { trigger, start: "top 85%", toggleActions: "play none none reverse" },
             });
 
           reveal(chars, introEl, { stagger: 0.02, duration: 0.5, rotateZ: 0 });
-          reveal(highlight, introEl, { x: 0, autoAlpha: 1, duration: 0.6 });
+          reveal(highlight, introEl, { x: 0, autoAlpha: 1, ease: "back.out(1.7)", duration: 0.6 });
           reveal(ledeLines, story, { stagger: 0.12 });
           reveal(revealTargets, capabilityBlockRef.current, { stagger: 0.12, onStart: startVideo });
           reveal(closing, closing, { duration: 0.6 });
@@ -487,12 +601,17 @@ export default function WhoAreWe() {
           // trigger instead of one scrubbed timeline — but it's the exact
           // same "light row i, revert row i-1" logic as desktop, just fired
           // discretely as each row crosses ~60% up the viewport (either
-          // scroll direction), so it still only ever lights one row.
+          // scroll direction), so it still only ever lights one row. The
+          // active row's photo keeps the same slow Ken-Burns drift desktop
+          // uses, started once its own reveal finishes and killed the
+          // moment another row takes over.
           let activeIndex = -1;
           const setActive = (i) => {
             if (activeIndex === i) return;
 
             if (activeIndex > -1) {
+              driftTween?.kill();
+              driftTween = null;
               gsap.to(fills[activeIndex], { scaleX: 0, duration: 0.45, ease: "power3.inOut" });
               gsap.to(capLabels[activeIndex], { color: "#0a0a0a", duration: 0.45 });
               gsap.to(capDescs[activeIndex], { color: "rgba(10,10,10,0.46)", duration: 0.45 });
@@ -516,13 +635,23 @@ export default function WhoAreWe() {
             gsap.to(capDescs[i], { color: "rgba(255,255,255,0.78)", duration: 0.45 });
             gsap.to(capIndices[i], { color: "#ffffff", duration: 0.45 });
 
+            const startDrift = () => {
+              driftTween = gsap.to(stageMediaInner[i], {
+                scale: 1.06,
+                duration: 5,
+                ease: "sine.inOut",
+                yoyo: true,
+                repeat: -1,
+              });
+            };
+
             if (i === 0 && activeIndex === -1) {
               // First activation, first row — the photo is already resting
               // in the stage (see mount-time gsap.set above); unblur + pop it.
               gsap.fromTo(
                 stageMediaInner[0],
                 { scale: 1.04, filter: blurHidden },
-                { scale: 1, filter: blurVisible, duration: 0.6, ease: "power2.out" }
+                { scale: 1, filter: blurVisible, duration: 0.6, ease: "expo.out", onComplete: startDrift }
               );
             } else {
               // Guard against a mid-fade-out opacity from a previous visit
@@ -531,12 +660,12 @@ export default function WhoAreWe() {
               gsap.fromTo(
                 stageMedia[i],
                 { clipPath: HIDDEN_CLIP },
-                { clipPath: VISIBLE_CLIP, duration: 0.6, ease: "power4.inOut" }
+                { clipPath: VISIBLE_CLIP, duration: 0.6, ease: "expo.inOut" }
               );
               gsap.fromTo(
                 stageMediaInner[i],
                 { scale: 1.18, filter: blurHidden },
-                { scale: 1, filter: blurVisible, duration: 0.6, ease: "power3.out" }
+                { scale: 1, filter: blurVisible, duration: 0.6, ease: "expo.out", onComplete: startDrift }
               );
             }
 
@@ -565,6 +694,7 @@ export default function WhoAreWe() {
 
         return () => {
           parallaxCleanup();
+          driftTween?.kill();
           splitRest.revert();
           pin.classList.remove("is-marquee");
           stage.classList.remove("is-marquee");
@@ -590,6 +720,10 @@ export default function WhoAreWe() {
       />
 
       <div className="waw-pin" ref={pinRef}>
+        <p className="waw-scroll-hint" ref={scrollHintRef} aria-hidden="true">
+          {SCROLL_HINT_TEXT}
+        </p>
+
         <div className="waw-progress" ref={progressTrackRef} aria-hidden="true">
           <span className="waw-progress-dot" ref={progressDotRef} />
         </div>
@@ -652,7 +786,7 @@ export default function WhoAreWe() {
                       ) : (
                         <Image
                           src={cap.media.src}
-                          alt={cap.media.alt || ""}
+                          alt={cap.media.alt || cap.label}
                           fill
                           loading="lazy"
                           sizes="(min-width: 1024px) 420px, 90vw"

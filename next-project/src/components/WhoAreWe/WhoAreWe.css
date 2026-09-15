@@ -26,6 +26,10 @@
 
   .waw-pin.is-marquee {
     min-height: 100vh;
+    /* dvh accounts for mobile/laptop browser chrome (address bars, etc.)
+      shifting the real viewport height — ignored by browsers that don't
+      support it, so the 100vh line above still stands as the fallback. */
+    min-height: 100dvh;
     overflow: hidden;
     padding: 0;
   }
@@ -44,6 +48,60 @@
     clip: rect(0, 0, 0, 0);
     white-space: nowrap;
     border: 0;
+  }
+
+  /* ---------- scroll-speed hint — desktop/pinned experience only ----------
+    A quiet, sentence-case nudge (not a tracked-out uppercase eyebrow) that
+    the JS fades in the instant the section pins and fades out again just
+    before "Who are we?" starts revealing. Hidden entirely outside the
+    pinned marquee (mobile scrolls normally, so there's nothing to explain). */
+  .waw-scroll-hint {
+    display: none;
+    position: absolute;
+    top: clamp(1.5rem, 4vh, 3rem);
+    left: 50%;
+    z-index: 3;
+    margin: 0;
+    padding: 0.5em 1.1em;
+    transform: translateX(-50%);
+    font-family: var(--waw-font-body, var(--waw-font-body-fallback));
+    font-size: clamp(0.8rem, 1vw, 0.95rem);
+    font-weight: 500;
+    color: rgba(10, 10, 10, 0.55);
+    background: rgba(10, 10, 10, 0.035);
+    border: 1px solid var(--waw-ink-faint);
+    border-radius: 999px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    will-change: opacity, transform;
+  }
+
+  .waw-scroll-hint::after {
+    content: "";
+    display: inline-block;
+    width: 0.35em;
+    height: 0.35em;
+    margin-left: 0.6em;
+    border-right: 1.5px solid currentColor;
+    border-bottom: 1.5px solid currentColor;
+    transform: rotate(45deg) translateY(-2px);
+    animation: waw-hint-nudge 1.6s ease-in-out infinite;
+  }
+
+  @keyframes waw-hint-nudge {
+    0%, 100% { transform: rotate(45deg) translateY(-2px); }
+    50% { transform: rotate(45deg) translateY(2px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .waw-scroll-hint::after {
+      animation: none;
+    }
+  }
+
+  .waw-pin.is-marquee .waw-scroll-hint {
+    display: block;
   }
 
   /* ---------- decorative background rings (aria-hidden, no text, no SEO risk) ---------- */
@@ -86,7 +144,10 @@
   }
 
   /* ---------- scroll-progress rail — only shown during the desktop pin, so
-    scroll-jacking doesn't feel directionless. Purely decorative. ---------- */
+    scroll-jacking doesn't feel directionless. Purely decorative. The JS
+    measures this element's real rendered height at runtime, so changing
+    it here (e.g. in the short-viewport query below) doesn't need a matching
+    JS constant update. ---------- */
   .waw-progress {
     position: fixed;
     top: 50%;
@@ -403,6 +464,36 @@
     margin-top: clamp(1.5rem, 3vw, 2rem);
   }
 
+  /* ---------- narrower desktop widths (right at the 1024px threshold) ----------
+    The two-column split was tuned for a roomy desktop viewport; between
+    1024–1180px both columns were getting squeezed at the same time,
+    making the lede wrap awkwardly and the capability stage feel cramped.
+    A slightly leaner split gives each column more breathing room here. ---------- */
+  @media (min-width: 1024px) and (max-width: 1180px) {
+    .waw-stage.is-marquee .waw-story {
+      grid-template-columns: minmax(240px, 0.85fr) minmax(340px, 1.15fr);
+      column-gap: clamp(1.5rem, 3vw, 2.5rem);
+    }
+
+    .waw-stage.is-marquee .waw-capability-block {
+      grid-template-columns: minmax(240px, 1fr) minmax(260px, 1fr);
+    }
+  }
+
+  /* ---------- short viewports (shallow laptop browser windows) ----------
+    A light safety net, not the primary fix — the actual "misaligned /
+    things left stranded" bug was the intro heading's exit-slide distance
+    (fixed in the JS: it's now measured from the viewport's own width, not
+    just the heading's own width, so it always fully clears the screen
+    regardless of size). This is just a mild trim so the heading has a
+    little more breathing room on genuinely short windows; it should not
+    make the heading look small on an ordinary laptop screen. ---------- */
+  @media (max-height: 640px) {
+    .waw-stage.is-marquee .waw-intro {
+      font-size: clamp(4.25rem, 13.5vw, 10rem);
+    }
+  }
+
   /* ---------- small-screen niceties ---------- */
   @media (max-width: 640px) {
     .waw-capability-row {
@@ -422,4 +513,3 @@
       margin-top: 1.5rem;
     }
   }
-

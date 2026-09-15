@@ -2,13 +2,40 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
+import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import styles from "./WhyChooseUs.module.css";
+import ContactModal from "../ContactModal/ContactModal";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
+
+// Self-hosted via next/font instead of the previous Google Fonts
+// @import in the CSS module — same two families, but no extra
+// render-blocking network round trip and no flash-of-fallback-font on
+// first load. Each font's `variable` name matches the CSS custom
+// property it used to hard-code (--font-display / --font-sans), so
+// nothing else in the stylesheet has to change; the values just arrive
+// via the className applied to the root <section> below instead.
+// Bricolage Grotesque is a variable font (the old @import loaded its
+// opsz/wght axis directly), so no `weight` is passed here — omitting it
+// tells next/font to load the full variable range, which is what lets
+// .statement keep using the in-between font-weight: 650.
+const bricolageGrotesque = Bricolage_Grotesque({
+  subsets: ["latin"],
+  variable: "--font-display",
+  display: "swap",
+});
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-sans",
+  display: "swap",
+});
 
 // Small lead-in line that sits above the big statement.
 const KICKER_TEXT =
@@ -59,7 +86,8 @@ const STATEMENT_TOKENS = [
 // a photo doesn't change with the section's color state, so these
 // shouldn't either. Every icon shares the same stroke weight (1.6) so
 // the set reads as one deliberate family instead of four icons picked
-// up from different places.
+// up from different places. Reused again for the .marqueeServices list
+// in Stage 3, so the close of the page echoes the opening statement.
 const CHIP_DEFS = {
   web: {
     bg: "#CFE3FF",
@@ -101,6 +129,17 @@ const CHIP_DEFS = {
     ),
   },
 };
+
+// Same four disciplines, in copy form, for the closing CTA's services
+// list (Stage 3) — kept as a short separate list (rather than reused
+// verbatim from APPROACH_ITEMS below) since the CTA wants short labels,
+// not the longer descriptive sentence.
+const CTA_SERVICES = [
+  { id: "web", label: "Web development" },
+  { id: "leads", label: "Lead generation" },
+  { id: "email", label: "Email marketing" },
+  { id: "design", label: "Graphic design" },
+];
 
 // Inline chip used inside the statement — purely decorative, so it's
 // hidden from assistive tech; the discipline name is already present as
@@ -145,7 +184,10 @@ const APPROACH_ITEMS = [
 
 // Client stories carousel — replace with real testimonials/photos.
 // `photo` is a placeholder (picsum.photos) standing in for an actual
-// client/project photo; swap each one out before shipping.
+// client/project photo; swap each one out before shipping. Rendered via
+// next/image now (see renderStoryGroup), so picsum.photos needs to be
+// added to images.remotePatterns in next.config.js — or just swap these
+// for real photos hosted on a domain you've already allow-listed.
 const STORIES = [
   {
     handle: "@Sarah Bennett",
@@ -251,6 +293,17 @@ function PauseIcon() {
   );
 }
 
+// Small trailing arrow used on both CTA buttons (Stage 2's "Let's Talk"
+// and Stage 3's "Start a Project") so the two calls-to-action read as
+// the same family of control.
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 // Repeating phrase for the closing marquee banner. Rendered twice (two
 // identical groups back to back) so an xPercent(-50) loop is seamless.
 const MARQUEE_PHRASE = "Let's build your next website";
@@ -325,6 +378,7 @@ export default function WhyChooseUs() {
   // the prev/next/pause buttons can drive the same tween the auto-scroll
   // effect creates.
   const [isPaused, setIsPaused] = useState(false);
+  const [isContactOpen, setIsContactOpen] = useState(false);
 
   // Stage 2 — philosophy quote
   const quoteRef = useRef(null);
@@ -337,7 +391,7 @@ export default function WhyChooseUs() {
 
   // ---------------------------------------------------------------
   // Core scroll choreography: Stage 1 color snap + entrance reveals,
-  // Stage 2 / Stage 3 snaps + marquee.
+  // Stage 2 snap, Stage 3 marquee (color now fixed — see below).
   // ---------------------------------------------------------------
   useEffect(() => {
     const prefersReducedMotion = window.matchMedia(
@@ -370,9 +424,12 @@ export default function WhyChooseUs() {
         });
       };
 
+      const isMobile = window.matchMedia("(max-width: 640px)").matches;
+
+
       ScrollTrigger.create({
         trigger: heroRef.current,
-        start: "center center",
+        start: isMobile ? "center 38%" : "center center",
         onEnter: () => snapStage1(true),
         onEnterBack: () => snapStage1(true),
         onLeaveBack: () => snapStage1(false),
@@ -447,27 +504,33 @@ export default function WhyChooseUs() {
         }
       );
 
-      // ---------- Stage 2 — philosophy stage ----------
-      // Background SNAPS from black to accent the instant the section
-      // crosses a fixed point (vertical center of the viewport). Not
-      // tied to how far you keep scrolling after that — onEnter fires
-      // once going down, onLeaveBack reverses it once going back up.
-      gsap.set(quoteRef.current, {
+      // ---------- Stage 2 + Stage 3 — synced color snap ----------
+      // The philosophy panel ("upar wala") and the marquee/CTA panel
+      // ("niche wala") are meant to flip color TOGETHER, at the exact
+      // same scroll moment — not on two independent triggers. Two
+      // separate ScrollTriggers (one keyed to quoteRef's own top, one
+      // keyed to marqueeSectionRef's own top) fire at different times
+      // depending on each section's height, which is what caused the
+      // mismatch (one green while the other lagged black, or vice
+      // versa). Driving both elements off ONE trigger — the quote
+      // panel's — keeps them perfectly in lockstep in both directions.
+      gsap.set([quoteRef.current, marqueeSectionRef.current], {
         backgroundColor: "#0a0a0a",
         color: "#ffffff",
       });
+
       ScrollTrigger.create({
         trigger: quoteRef.current,
-        start: "top 10%",
+        start: isMobile ? "top -10%" : "top 10%",
         onEnter: () =>
-          gsap.to(quoteRef.current, {
+          gsap.to([quoteRef.current, marqueeSectionRef.current], {
             backgroundColor: "var(--color-accent)",
             color: "var(--color-ink)",
             duration: SNAP_DURATION,
             ease: SNAP_EASE,
           }),
         onLeaveBack: () =>
-          gsap.to(quoteRef.current, {
+          gsap.to([quoteRef.current, marqueeSectionRef.current], {
             backgroundColor: "#0a0a0a",
             color: "#ffffff",
             duration: SNAP_DURATION,
@@ -503,31 +566,10 @@ export default function WhyChooseUs() {
       });
 
       // ---------- Stage 3 — marquee CTA ----------
-      // Background SNAPS from accent to black at its own fixed point
-      // (same point-trigger pattern as above).
-      gsap.set(marqueeSectionRef.current, {
-        backgroundColor: "var(--color-accent)",
-        color: "var(--color-ink)",
-      });
-      ScrollTrigger.create({
-        trigger: marqueeSectionRef.current,
-        start: "top 10%",
-        onEnter: () =>
-          gsap.to(marqueeSectionRef.current, {
-            backgroundColor: "#0a0a0a",
-            color: "#ffffff",
-            duration: SNAP_DURATION,
-            ease: SNAP_EASE,
-          }),
-        onLeaveBack: () =>
-          gsap.to(marqueeSectionRef.current, {
-            backgroundColor: "var(--color-accent)",
-            color: "var(--color-ink)",
-            duration: SNAP_DURATION,
-            ease: SNAP_EASE,
-          }),
-      });
-
+      // Color for this panel is already handled above (it's tweened in
+      // lockstep with quoteRef via the shared ScrollTrigger), so there's
+      // no separate color logic here anymore — just the entrance reveal
+      // and the marquee loop itself.
       gsap.from(`.${styles.marqueeCtaContent}`, {
         opacity: 0,
         y: 24,
@@ -719,11 +761,20 @@ export default function WhyChooseUs() {
   // Round "Back / Next" cursor that follows the pointer over the
   // carousel — a visual hint that the viewport is click-to-navigate
   // (see the click-to-step handler above). Mouse-only.
+  //
+  // The position update is throttled to one write per animation frame
+  // with requestAnimationFrame instead of running getBoundingClientRect
+  // + a style write on every single "pointermove" (which can fire far
+  // more often than the screen actually repaints) — same end result,
+  // less main-thread work per frame.
   // ---------------------------------------------------------------
   useEffect(() => {
     const viewport = storiesViewportRef.current;
     const cursor = storiesCursorRef.current;
     if (!viewport || !cursor) return;
+
+    let rafId = null;
+    let lastEvent = null;
 
     const setCursorPosition = (event) => {
       const bounds = viewport.getBoundingClientRect();
@@ -742,11 +793,20 @@ export default function WhyChooseUs() {
     const handlePointerLeave = (event) => {
       if (event.pointerType !== "mouse") return;
       cursor.style.opacity = "0";
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+        rafId = null;
+      }
     };
 
     const handlePointerMove = (event) => {
       if (event.pointerType !== "mouse") return;
-      setCursorPosition(event);
+      lastEvent = event;
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        if (lastEvent) setCursorPosition(lastEvent);
+      });
     };
 
     viewport.addEventListener("pointerenter", handlePointerEnter);
@@ -757,6 +817,7 @@ export default function WhyChooseUs() {
       viewport.removeEventListener("pointerenter", handlePointerEnter);
       viewport.removeEventListener("pointerleave", handlePointerLeave);
       viewport.removeEventListener("pointermove", handlePointerMove);
+      if (rafId !== null) cancelAnimationFrame(rafId);
     };
   }, []);
 
@@ -825,8 +886,16 @@ export default function WhyChooseUs() {
               <path d="M4 24V15.2C4 8.4 8 3.2 14.8 0l2 4C12.4 6.8 10.4 10 10 13.6h6V24H4zm16 0V15.2C20 8.4 24 3.2 30.8 0l2 4c-4.4 2.8-6.4 6-6.8 9.6h6V24H20z" />
             </svg>
 
+            {/* Client name is real content but not a document heading —
+                it's metadata about a testimonial, not a section of the
+                page, so it's a plain paragraph (styled the same as
+                before) rather than an <h3>. Keeps the page's heading
+                outline to h2 (this section) and h3 (the CTA heading
+                below) instead of five extra h3s for names, which is
+                what search engines and screen-reader "jump by heading"
+                navigation actually read as the page's structure. */}
             <div className={styles.storyCardHeading}>
-              <h3 className={styles.storyHandle}>{story.handle}</h3>
+              <p className={styles.storyHandle}>{story.handle}</p>
               <p className={styles.storyRole}>{story.role}</p>
             </div>
 
@@ -874,10 +943,23 @@ export default function WhyChooseUs() {
             aria-label={`Photo shared by ${story.handle}`}
           >
             <div className={styles.storyCardPhotoMask} />
-            <div
-              className={styles.storyCardPhotoImage}
-              style={{ backgroundImage: `url(${story.photo})` }}
-            />
+            {/* next/image instead of a CSS background-image: lazy-loads
+                below the fold, serves a right-sized/right-format image
+                per device, and avoids shipping the full-resolution photo
+                to everyone regardless of viewport. The reveal animation
+                itself is untouched — .storyCardPhotoImage still owns the
+                scale/translate transform, this element just fills it.
+                alt="" because the parent already carries the accessible
+                name via role="img" + aria-label above; a second alt here
+                would just repeat it for screen readers. */}
+            <div className={styles.storyCardPhotoImage}>
+              <Image
+                src={story.photo}
+                alt=""
+                fill
+                sizes="(max-width: 860px) 80vw, 380px"
+              />
+            </div>
             {/* Keeps the name + rating visible once the photo covers the
                 card, so hovering doesn't strip away whose story this
                 is — the text underneath fades out at the same time. */}
@@ -898,7 +980,7 @@ export default function WhyChooseUs() {
     <section
       ref={sectionRef}
       id="why-choose-us"
-      className={styles.section}
+      className={`${styles.section} ${bricolageGrotesque.variable} ${plusJakartaSans.variable}`}
       aria-labelledby="why-choose-us-heading"
     >
       {/* eslint-disable-next-line react/no-danger */}
@@ -1038,18 +1120,7 @@ export default function WhyChooseUs() {
               }
             >
               <span className={styles.processButtonIcon} aria-hidden="true">
-                <svg
-                  viewBox="0 0 24 24"
-                  width="14"
-                  height="14"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M9 6l6 6-6 6" />
-                </svg>
+                <ArrowIcon />
               </span>
               Let&rsquo;s Talk
             </button>
@@ -1057,7 +1128,9 @@ export default function WhyChooseUs() {
         </div>
       </div>
 
-      {/* Stage 3 — marquee CTA, accent -> black (snap) */}
+      {/* Stage 3 — marquee banner + closing CTA panel. Always black now
+          (see the gsap.set for marqueeSectionRef above) — no accent
+          phase, so it never overlaps visually with Stage 2's green. */}
       <div ref={marqueeSectionRef} className={styles.marqueeSection}>
         <div className={styles.marqueeViewport}>
           <div
@@ -1078,7 +1151,17 @@ export default function WhyChooseUs() {
           </div>
         </div>
 
+        {/* Redesigned closing panel: a soft accent glow behind the
+            heading, the same four discipline icons used in the Stage 1
+            statement (so the page's opening and closing echo each
+            other), and a primary + secondary call to action instead of
+            a single button on its own. The outer .marqueeCtaContent
+            div keeps its original class name, since that's what the
+            GSAP entrance animation above selects by — only what's
+            inside it changed. */}
         <div className={styles.marqueeCtaContent}>
+          <div className={styles.marqueeCtaGlow} aria-hidden="true" />
+
           <h3 className={styles.marqueeHeading}>
             Got an idea? Let&rsquo;s build the system behind it.
           </h3>
@@ -1086,12 +1169,43 @@ export default function WhyChooseUs() {
             Website, funnel, email, and brand — designed and built
             together, not as four separate vendors.
           </p>
-          {/* Swap the href for your actual contact route */}
-          <Link href="/contact" className={styles.ctaButton}>
-            Start a Project
-          </Link>
+
+          <ul className={styles.marqueeServices}>
+            {CTA_SERVICES.map((service) => (
+              <li key={service.id} className={styles.marqueeServiceItem}>
+                <span
+                  className={styles.marqueeServiceIcon}
+                  style={{ backgroundColor: CHIP_DEFS[service.id].bg }}
+                  aria-hidden="true"
+                >
+                  {CHIP_DEFS[service.id].icon}
+                </span>
+                {service.label}
+              </li>
+            ))}
+          </ul>
+
+          <div className={styles.marqueeCtaActions}>
+            {/* Swap the href for your actual contact route */}
+            <button
+              type="button"
+              className={styles.ctaButton}
+              onClick={() => setIsContactOpen(true)}
+            >
+              Start a Project
+              <span className={styles.ctaButtonIcon} aria-hidden="true">
+                <ArrowIcon />
+              </span>
+            </button>
+            {/* Swap for your real inbox — a quiet second path for anyone
+                who'd rather email than fill out a form. */}
+            <a href="mailto:hello@zarrar.studio" className={styles.marqueeContactLink}>
+              Or email isabella.web.devs@gmail.com
+            </a>
+          </div>
         </div>
       </div>
+      <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
     </section>
   );
 }

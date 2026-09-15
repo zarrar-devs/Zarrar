@@ -594,7 +594,12 @@
   /* Settled/no-JS state: final resting color of this stage. */
   background-color: var(--color-accent);
   color: var(--color-ink);
-  padding: clamp(96px, 16vw, 220px) clamp(20px, 6vw, 96px);
+  /* Was clamp(96px, 16vw, 220px) top/bottom — on large desktop viewports
+    that alone added up to 440px of dead vertical space before the
+    marquee below even started, which is what read as an oversized gap
+    between the "Let's Talk" button and Stage 3. Trimmed to a still-
+    generous but much tighter range. */
+  padding: clamp(72px, 11vw, 140px) clamp(20px, 6vw, 96px);
   display: flex;
   justify-content: center;
 }
@@ -642,19 +647,32 @@
   will-change: transform;
 }
 
+/* This pill had zero fluid sizing before (fixed 10/28/10/10px padding,
+  fixed 0.95rem text, fixed 30px icon) — every other element in this
+  section scales down with clamp(), so on phones and smaller laptop
+  viewports the button stayed pinned at its full desktop size while its
+  surroundings shrank around it, which is what made it read as
+  oversized. --process-icon-size drives both the icon circle and the
+  padding it's tucked into from one place, same pattern as
+  --cta-icon-size on .ctaButton below, so the two can never drift out
+  of sync. The vw coefficients are deliberately gentle (under 1.6vw) so
+  the ramp keeps easing down through ~900-1300px laptop widths instead
+  of already sitting at its ceiling by then. */
 .processButton {
+  --process-icon-size: clamp(20px, 3vw, 30px);
   display: inline-flex;
   align-items: center;
-  gap: 12px;
+  gap: clamp(8px, 1.6vw, 12px);
   border: none;
   cursor: pointer;
   background-color: var(--color-ink);
   color: #ffffff;
   border-radius: 999px;
-  padding: 10px 28px 10px 10px;
+  padding: clamp(7px, 1vw, 10px) clamp(16px, 3.2vw, 28px)
+    clamp(7px, 1vw, 10px) clamp(7px, 1vw, 10px);
   font-family: var(--font-sans);
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: clamp(0.78rem, 1.6vw, 0.95rem);
   transition: transform 0.25s ease, background-color 0.25s ease;
 }
 
@@ -675,11 +693,17 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
+  flex: none;
+  width: var(--process-icon-size);
+  height: var(--process-icon-size);
   border-radius: 50%;
   background-color: var(--color-accent);
   color: var(--color-ink);
+}
+
+.processButtonIcon svg {
+  width: 46%;
+  height: 46%;
 }
 
 /* =======================================================================
@@ -692,7 +716,13 @@
   /* Settled/no-JS state: final resting color of this stage. */
   background-color: var(--color-ink);
   color: #ffffff;
-  padding: clamp(48px, 8vw, 96px) 0 clamp(80px, 12vw, 160px);
+  /* Top was clamp(48px, 8vw, 96px) — combined with .quoteStage's own
+    bottom padding above, that's what stacked into the visible gap
+    between the CTA button and the marquee line. Bottom was up to
+    160px, which is what left the oversized empty space under the very
+    last section on desktop. Both trimmed; still enough room for the
+    marquee banner and the CTA content to breathe. */
+  padding: clamp(28px, 4.5vw, 56px) 0 clamp(64px, 9vw, 120px);
   overflow: hidden;
 }
 
@@ -737,7 +767,7 @@
 .marqueeCtaContent {
   position: relative;
   max-width: 760px;
-  margin: clamp(56px, 10vw, 100px) auto 0;
+  margin: clamp(44px, 7vw, 80px) auto 0;
   padding: 0 clamp(20px, 6vw, 96px);
   text-align: center;
 }
@@ -816,6 +846,11 @@
   font-size: 0.86rem;
   color: inherit;
   opacity: 0.85;
+  transition: opacity 0.25s ease;
+}
+
+.marqueeServiceItem:hover {
+  opacity: 1;
 }
 
 .marqueeServiceIcon {
@@ -827,6 +862,11 @@
   height: 28px;
   border-radius: 8px;
   color: #0a0a0a;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.marqueeServiceItem:hover .marqueeServiceIcon {
+  transform: scale(1.12) rotate(-4deg);
 }
 
 .marqueeServiceIcon svg {
@@ -841,27 +881,55 @@
   gap: 20px;
 }
 
+/* ---------- "Start a Project" — premium color-invert hover ----------
+  On hover a dark disc grows from the icon's position until it fills
+  the whole pill (button flips from dark-text-on-lime to
+  lime-text-on-dark), a soft glossy sheen sweeps across on top of that,
+  and the arrow springs forward with a slight rotate. Everything runs
+  on transform/opacity so it stays smooth, and the button sets its own
+  local stacking context (position + z-index) so the layering below is
+  self-contained and can't clash with anything else on the page. */
 .ctaButton {
+  /* Previously clamp(24px, 6vw, 30px) on the icon/fill directly — the
+    6vw coefficient meant it hit its 30px ceiling by ~500px wide, so a
+    1024-1440px "small laptop" viewport rendered the exact same size as
+    a 1920px desktop. Defined once here (inherited by the fill/icon
+    below) with a gentler coefficient so it keeps easing down across
+    laptop widths instead of maxing out almost immediately. */
+  --cta-icon-size: clamp(20px, 2.4vw, 27px);
+  position: relative;
+  z-index: 0;
+  isolation: isolate;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
-  gap: 14px;
+  gap: clamp(7px, 1.6vw, 12px);
   background-color: var(--color-accent);
   color: var(--color-ink);
   text-decoration: none;
   border-radius: 999px;
-  padding: 14px 14px 14px 32px;
+  /* Same fix as the icon size above: lower vw coefficients so the pill
+    keeps shrinking gradually through laptop widths instead of sitting
+    at its full-desktop ceiling from ~500px onward. */
+  padding: clamp(9px, 1.4vw, 13px) clamp(9px, 1.4vw, 13px)
+    clamp(9px, 1.4vw, 13px) clamp(16px, 2.8vw, 28px);
   font-family: var(--font-sans);
   font-weight: 700;
-  font-size: 1rem;
-  transition: transform 0.25s ease;
+  font-size: clamp(0.8rem, 1.6vw, 0.95rem);
+  box-shadow: 0 0 0 0 rgba(192, 255, 74, 0);
+  transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.45s ease;
 }
 
-.ctaButton:hover {
-  transform: translateY(-2px);
+.ctaButton:hover,
+.ctaButton:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: 0 16px 36px -12px rgba(192, 255, 74, 0.55);
 }
 
 .ctaButton:active {
-  transform: translateY(0) scale(0.97);
+  transform: translateY(-1px) scale(0.96);
+  box-shadow: 0 8px 20px -10px rgba(192, 255, 74, 0.45);
 }
 
 .ctaButton:focus-visible {
@@ -869,21 +937,103 @@
   outline-offset: 3px;
 }
 
+/* The dark disc that wipes outward from the icon to cover the whole
+  button. Sized/positioned to match the icon exactly at rest so the two
+  are indistinguishable until hover; scaling (not width/height) keeps
+  the growth on the compositor instead of triggering layout. */
+.ctaButtonFill {
+  position: absolute;
+  top: 50%;
+  right: clamp(9px, 1.4vw, 13px);
+  z-index: 1;
+  width: var(--cta-icon-size);
+  height: var(--cta-icon-size);
+  margin-top: calc(var(--cta-icon-size) / -2);
+  border-radius: 50%;
+  background-color: var(--color-ink);
+  transform: scale(1);
+  transition: transform 0.6s cubic-bezier(0.65, 0, 0.35, 1);
+  pointer-events: none;
+}
+
+.ctaButton:hover .ctaButtonFill,
+.ctaButton:focus-visible .ctaButtonFill {
+  /* Large enough to fully cover the pill at any width this button
+    renders at; overflow: hidden on .ctaButton clips the rest, so
+    over-covering is harmless. */
+  transform: scale(18);
+}
+
+/* A soft glossy sheen that glazes across on hover, on top of the fill.
+  Purely decorative — the one bold flourish on this button — so it's
+  the first thing dropped under reduced motion, below. */
+.ctaButton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(
+    115deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.5) 50%,
+    transparent 60%
+  );
+  background-size: 250% 100%;
+  background-position: 130% 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.ctaButton:hover::after,
+.ctaButton:focus-visible::after {
+  opacity: 1;
+  animation: ctaShine 0.85s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes ctaShine {
+  from {
+    background-position: 130% 0;
+  }
+  to {
+    background-position: -30% 0;
+  }
+}
+
+.ctaButtonLabel {
+  position: relative;
+  z-index: 2;
+  transition: color 0.3s ease 0.1s;
+}
+
+.ctaButton:hover .ctaButtonLabel,
+.ctaButton:focus-visible .ctaButtonLabel {
+  color: var(--color-accent);
+}
+
 .ctaButtonIcon {
+  position: relative;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   flex: none;
-  width: 30px;
-  height: 30px;
+  width: var(--cta-icon-size);
+  height: var(--cta-icon-size);
   border-radius: 50%;
   background-color: var(--color-ink);
   color: var(--color-accent);
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.ctaButton:hover .ctaButtonIcon,
+.ctaButton:focus-visible .ctaButtonIcon {
+  transform: translateX(3px) rotate(8deg);
 }
 
 .ctaButtonIcon svg {
-  width: 13px;
-  height: 13px;
+  width: 44%;
+  height: 44%;
 }
 
 /* Secondary path for anyone who'd rather email than click through to a
@@ -911,11 +1061,76 @@
   outline-offset: 3px;
 }
 
-/* ---------- Reduced motion ---------- */
+/* ---------- Responsive tiers ---------- */
+
+/* "Small laptop" tier (roughly 13" laptops and tablet landscape,
+  ~1024-1200px). The clamp() ranges above are fluid, but their vw
+  coefficients are tuned to keep easing down all the way out to ~1600px
+  — this tier is a belt-and-braces pass on top of that so both CTA
+  pills, the statement, and the pull-quote visibly read as a size down
+  from full desktop at these widths, not a copy of it. */
+@media (max-width: 1200px) {
+  .statement {
+    font-size: clamp(1.4rem, 2.6vw, 2.15rem);
+  }
+
+  .quoteText {
+    font-size: clamp(1.6rem, 4vw, 2.75rem);
+  }
+
+  .processButton {
+    --process-icon-size: clamp(18px, 2.4vw, 24px);
+    font-size: clamp(0.76rem, 1.4vw, 0.86rem);
+    padding: clamp(6px, 0.9vw, 8px) clamp(14px, 2.6vw, 20px)
+      clamp(6px, 0.9vw, 8px) clamp(6px, 0.9vw, 8px);
+  }
+
+  .ctaButton {
+    --cta-icon-size: clamp(18px, 2vw, 22px);
+    font-size: clamp(0.78rem, 1.3vw, 0.86rem);
+    padding: clamp(8px, 1.1vw, 10px) clamp(8px, 1.1vw, 10px)
+      clamp(8px, 1.1vw, 10px) clamp(14px, 2.2vw, 20px);
+  }
+}
 
 @media (max-width: 640px) {
   .stage1 {
     padding-top: 56px;
+  }
+}
+
+@media (max-width: 420px) {
+  /* Label + the three prev/pause/next controls were tight enough on
+    very narrow phones (≤420px) to risk crowding — letting the row wrap
+    keeps both pieces fully tappable instead of squeezing them. */
+  .storiesHeader {
+    flex-wrap: wrap;
+  }
+
+  .marqueeHeading {
+    font-size: 1.45rem;
+  }
+
+  .marqueeItem {
+    font-size: 1.5rem;
+  }
+
+  /* Both CTA pills get one more explicit trim on very narrow phones —
+    the fluid clamp() ranges already bottom out near here, but pinning
+    an exact size removes any doubt at the width the complaint was
+    actually about. */
+  .processButton {
+    --process-icon-size: 20px;
+    gap: 7px;
+    font-size: 0.76rem;
+    padding: 7px 14px 7px 7px;
+  }
+
+  .ctaButton {
+    --cta-icon-size: 19px;
+    gap: 6px;
+    font-size: 0.78rem;
+    padding: 8px 8px 8px 14px;
   }
 }
 
@@ -934,5 +1149,19 @@
   .storyCardPhotoCaption,
   .storyPhotoTriggerIcon {
     transition: none !important;
+  }
+
+  /* Keep the hover/focus color feedback on the CTA button, but drop the
+    growth sweep, icon spring, and gloss animation — state still
+    changes, it just snaps instead of animating. */
+  .ctaButton,
+  .ctaButtonFill,
+  .ctaButtonLabel,
+  .ctaButtonIcon {
+    transition-duration: 0.01ms !important;
+  }
+
+  .ctaButton::after {
+    display: none;
   }
 }
