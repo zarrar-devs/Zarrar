@@ -13,40 +13,32 @@ import { Fraunces, Space_Mono } from "next/font/google";
 import gsap from "gsap";
 
 /**
- * Hero — v9
+ * Hero — v10
  *
- * What changed vs v8:
- *  - Full visual redesign: a strict black-and-white palette replacing
- *    the previous red/blue/gold system. No hue anywhere — contrast and
- *    motion carry the page instead of color.
- *  - Headline now mixes two typefaces on purpose: an italic serif
- *    (Fraunces, self-hosted via next/font/google as `--font-serif`)
- *    for the connecting words, and a bold mono "stamp" face (Space
- *    Mono, `--font-mono-stamp`) reserved for the subject of each line
- *    ("Interfaces" / "Inboxes"), set inside a solid block. Line one's
- *    block is filled; line two's is the inverse (outline). Hovering a
- *    block swaps it to the other treatment — the one deliberate,
- *    recurring "flip" interaction the rest of the page's hover states
- *    (logo, menu button) echo, rather than a one-off accent.
- *  - Added a small pair of eyes above the headline that track the
- *    cursor (GSAP quickTo, direct DOM, no React state on every move)
- *    and blink on an irregular timer. Purely decorative
- *    (aria-hidden) — a bit of warmth against all the straight edges.
- *  - Added a vertical "SCROLL TO EXPLORE" label on the right edge —
- *    doubles as the page's only scroll affordance, so it earns its
- *    place rather than sitting alongside a separate one.
- *  - Nav mark and menu button now share the same invert-on-hover logic
- *    as the headline blocks (solid <-> outline), and pick up a small
- *    magnetic pull toward the cursor (GSAP quickTo) — both cheap,
- *    both consistent with the rest of the interaction language.
- *  - A very faint fractal-noise layer sits behind everything at ~3.5%
- *    opacity (mix-blend: multiply) so the white reads as paper rather
- *    than a screen. It's a decorative ::before, not a real element, so
- *    it can't intercept clicks or shift layout.
- *  - Scramble hover-decode no longer swaps in a color spark; the
- *    "about to resolve" flip now pops the letter's scale instead
- *    (`.is-spark { transform: scale(...) }`), so the effect reads the
- *    same over both the plain serif words and the filled mono blocks.
+ * What changed vs v9:
+ *  - The nav's hamburger menu button is gone. In its place: two direct
+ *    links, "Services" and "Contact", styled as small stamp-blocks —
+ *    the exact same solid/outline invert-on-hover device the headline
+ *    already uses for its two boxed words (see .scramble-word--boxed
+ *    below). This reuses an existing motif instead of introducing a
+ *    new one: "Services" gets the outline treatment, "Contact" (the
+ *    one action worth making bold) gets the solid fill. Both invert on
+ *    hover exactly like the headline blocks and the old menu button
+ *    did, so the interaction language doesn't change, only what's
+ *    being pointed at.
+ *  - navMenuRef is gone; navLinksRef (an array ref, same pattern as
+ *    pupilRefs) now feeds the entrance timeline and the magnetic-pull
+ *    effect, so both nav links settle in and get the same cursor-pull
+ *    the mark always had — nothing about those effects changed besides
+ *    what they target.
+ *  - No layout logic changed. .hero keeps its own overflow:hidden and
+ *    box-sizing:border-box, so this component was already containing
+ *    its own content before this edit and still does after it.
+ *
+ * (v9's changes are unchanged and still apply: black-and-white
+ * palette, the two-typeface headline with hover-scramble decode,
+ * cursor-tracking eyes, the vertical edge label, and the faint paper
+ * grain layer.)
  *
  * What did NOT change: ScrambleHeadline's width-lock-after-fonts-ready
  * and text-content-keyed setup effect are the fix for a real bug (see
@@ -68,10 +60,9 @@ const displayFont = Fraunces({
   display: "swap",
 });
 
-// Bold mono for the headline's "stamped" words only — deliberately a
-// second, clearly-distinct family (see the file header), not used
-// anywhere else on the page except the nav mark and the edge label,
-// which borrow it to tie the chrome back to the headline's device.
+// Bold mono for the headline's "stamped" words, plus the nav links and
+// edge label that borrow the same device — deliberately a second,
+// clearly-distinct family (see the file header).
 const stampFont = Space_Mono({
   subsets: ["latin"],
   weight: ["700"],
@@ -88,7 +79,7 @@ const HEADLINE_LINES = ["Interfaces worth staying on.", "Inboxes worth opening."
 
 const Hero = forwardRef(function Hero({ revealed = true }, ref) {
   const navMarkRef = useRef(null);
-  const navMenuRef = useRef(null);
+  const navLinksRef = useRef([]);
   const headlineRef = useRef(null);
   const subRef = useRef(null);
   const eyesRef = useRef(null);
@@ -109,7 +100,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         opacity: 0,
         filter: "blur(14px)",
       });
-      gsap.set([navMarkRef.current, navMenuRef.current], {
+      gsap.set([navMarkRef.current, ...navLinksRef.current], {
         opacity: 0,
         y: -10,
       });
@@ -139,7 +130,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         opacity: 1,
         filter: "blur(0px)",
       });
-      gsap.set([navMarkRef.current, navMenuRef.current], {
+      gsap.set([navMarkRef.current, ...navLinksRef.current], {
         opacity: 1,
         y: 0,
       });
@@ -154,7 +145,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
     // nav settles first — quick and understated, it's chrome, not the
     // content the page is actually about
     tl.to(
-      [navMarkRef.current, navMenuRef.current],
+      [navMarkRef.current, ...navLinksRef.current],
       { opacity: 1, y: 0, duration: 0.55, stagger: 0.06 },
       0
     );
@@ -279,17 +270,19 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
     };
   }, []);
 
-  // Small magnetic pull on the two nav elements toward the cursor.
-  // Cheap (two quickTo calls, only active while the pointer is over
-  // the element) and consistent with the eyes' use of the same GSAP
-  // pattern elsewhere in this file.
+  // Small magnetic pull on the nav mark and each nav link toward the
+  // cursor. Cheap (two quickTo calls per element, only active while the
+  // pointer is over the element) and consistent with the eyes' use of
+  // the same GSAP pattern elsewhere in this file.
   useEffect(() => {
     const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)"
     ).matches;
     if (reduceMotion) return;
 
-    const targets = [navMarkRef.current, navMenuRef.current].filter(Boolean);
+    const targets = [navMarkRef.current, ...navLinksRef.current].filter(
+      Boolean
+    );
     const cleanups = targets.map((el) => {
       const xTo = gsap.quickTo(el, "x", { duration: 0.35, ease: "power3.out" });
       const yTo = gsap.quickTo(el, "y", { duration: 0.35, ease: "power3.out" });
@@ -375,66 +368,79 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           display: flex;
           align-items: center;
           justify-content: space-between;
+          gap: 12px;
           padding-bottom: 22px;
           border-bottom: 1px solid var(--line);
         }
         .hero__mark {
+          font-weight: 700;
+          font-size: 1.05rem;
+          letter-spacing: 0.03em;
+          color: inherit;
+          text-decoration: none;
+          white-space: nowrap;
+        }
+
+        /* Services / Contact — reuses the exact solid/outline invert
+           device the headline's boxed words already use (see
+           .scramble-word--boxed below), just at nav scale. Contact
+           gets the solid fill since it's the one action worth making
+           bold; Services stays outline. clamp() keeps both legible
+           and non-wrapping down to narrow phones without needing a
+           separate mobile layout. */
+        .hero__links {
+          display: flex;
+          align-items: center;
+          gap: clamp(6px, 2vw, 12px);
+        }
+        .hero__link {
           display: inline-flex;
           align-items: center;
+          white-space: nowrap;
           font-family: var(--font-stamp);
           font-weight: 700;
-          font-size: 0.82rem;
-          letter-spacing: 0.05em;
-          color: var(--paper);
-          background: var(--ink);
-          padding: 9px 14px;
-          border-radius: 7px;
-          border: 1.5px solid var(--ink);
+          font-size: clamp(0.68rem, 1.9vw, 0.82rem);
+          letter-spacing: -0.01em;
           text-decoration: none;
-          transition: background 0.2s ease, color 0.2s ease;
+          padding: 0.5em 0.8em;
+          border-radius: 8px;
+          transition: background 0.22s ease, color 0.22s ease,
+            box-shadow 0.22s ease, transform 0.2s ease;
         }
-        .hero__mark:hover {
+        .hero__link:hover {
+          transform: translateY(-1px);
+        }
+        .hero__link--outline {
           background: var(--paper);
           color: var(--ink);
+          box-shadow: inset 0 0 0 1.5px var(--ink);
         }
-        .hero__mark:focus-visible {
+        .hero__link--outline:hover {
+          background: var(--ink);
+          color: var(--paper);
+          box-shadow: none;
+        }
+        .hero__link--solid {
+          background: var(--ink);
+          color: var(--paper);
+        }
+        .hero__link--solid:hover {
+          background: var(--paper);
+          color: var(--ink);
+          box-shadow: inset 0 0 0 1.5px var(--ink);
+        }
+        .hero__link:focus-visible {
           outline: 2px solid var(--ink);
           outline-offset: 3px;
         }
-        /* 44x44 is the usual minimum recommended touch-target size — the
-           button itself provides that hit area, independent of how big
-           the two visible bars are drawn, so the icon doesn't need to
-           grow just to be easier to tap. */
-        .hero__menu {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 5px;
-          width: 44px;
-          height: 44px;
-          margin: 0 -7px;
-          padding: 0;
-          background: none;
-          border: 1.5px solid var(--ink);
-          border-radius: 50%;
-          cursor: pointer;
-          transition: background 0.2s ease;
-        }
-        .hero__menu span {
-          display: block;
-          width: 16px;
-          height: 2px;
-          background: var(--ink);
-          transition: transform 0.2s ease, background 0.2s ease;
-        }
-        .hero__menu:hover { background: var(--ink); }
-        .hero__menu:hover span { background: var(--paper); }
-        .hero__menu:hover span:first-child { transform: translateX(3px); }
-        .hero__menu:hover span:last-child { transform: translateX(-3px); }
-        .hero__menu:focus-visible {
-          outline: 2px solid var(--ink);
-          outline-offset: 4px;
+        @media (max-width: 360px) {
+          .hero__link {
+            padding: 0.42em 0.6em;
+            font-size: 0.66rem;
+          }
+          .hero__links {
+            gap: 6px;
+          }
         }
 
         /* Edge label — doubles as the page's only scroll affordance */
@@ -651,15 +657,22 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         <Link href="/" className="hero__mark" ref={navMarkRef} aria-label="Zarrar — home">
           ZARRAR
         </Link>
-        <button
-          type="button"
-          className="hero__menu"
-          ref={navMenuRef}
-          aria-label="Open menu"
-        >
-          <span />
-          <span />
-        </button>
+        <nav className="hero__links" aria-label="Primary">
+          <Link
+            href="#services"
+            className="hero__link hero__link--outline"
+            ref={(el) => (navLinksRef.current[0] = el)}
+          >
+            Services
+          </Link>
+          <Link
+            href="#contact"
+            className="hero__link hero__link--solid"
+            ref={(el) => (navLinksRef.current[1] = el)}
+          >
+            Contact
+          </Link>
+        </nav>
       </header>
 
       <div className="hero__edge-tag" ref={edgeTagRef}>

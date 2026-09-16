@@ -221,11 +221,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           padding-bottom: 22px;
           border-bottom: 1px solid var(--line);
         }
-        .hero__mark {
-          font-weight: 700;
-          font-size: 1.05rem;
-          letter-spacing: 0.03em;
-        }
+      
         .hero__menu {
           display: flex;
           flex-direction: column;
