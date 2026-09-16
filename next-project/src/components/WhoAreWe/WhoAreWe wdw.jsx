@@ -3,85 +3,88 @@
 /**
  * Requires: npm install gsap@latest lenis   (v3.13+ — SplitText is bundled & free)
  *
- * next.config.js — only needed if any capability media points at a remote host:
- *   images: { remotePatterns: [{ protocol: "https", hostname: "..." }] }
- *   (self-host these before shipping — a third-party image host on the
- *    critical path hurts LCP, which hurts SEO.)
+ * next.config.js — needed because inline images use next/image with a remote host:
+ *   images: { remotePatterns: [{ protocol: "https", hostname: "picsum.photos" }] }
+ *   (swap picsum for your real, self-hosted assets before shipping — a third-party
+ *    image host on the critical path hurts LCP, which hurts SEO.)
  *
- * ── What changed vs round 11 ────────────────────────────────────────────────
- * 1) FIXED THE LEDE REVEAL (visible in the screen recording — "people
- *    actually trust," rendered sliced in half horizontally for the whole
- *    length of the animation). Each lede sentence sat inside ONE
- *    overflow:hidden mask, which is only correct if the sentence renders
- *    as a single visual line. In the desktop column each one wraps onto
- *    three lines, so the mask was sized to the full three-line block
- *    while the text slid up through it from yPercent:130 — every line
- *    below the first was chopped by the mask's bottom edge. Masking is
- *    now per WORD (the same construction the hero's sub-copy uses): a
- *    word can't wrap inside itself, so each mask is always exactly one
- *    line tall and this can't recur at any viewport width. The reveal
- *    also reads better for it — words cascade in with a blur shed
- *    instead of three lines rising as one slab.
- * 2) PHOTOGRAPHY IS BACK IN FULL COLOUR. The grayscale pass is gone, and
- *    with it the reason every JS-written filter value had to carry
- *    `grayscale(1)` — those are plain `blur()` again.
- *
- * ── What changed in round 11 ────────────────────────────────────────────────
- * 1) VISUAL SYSTEM MATCHES Hero v9. The blue accent is gone; emphasis
- *    is carried by inversion (solid black block <-> outlined block),
- *    which is the same device the hero uses. Type matches the hero's
- *    three roles exactly: Fraunces italic for display, Space Mono for
- *    stamped/labelled bits, Space Grotesk for body. See WhoAreWe.css for
- *    the full rationale.
- * 2) REAL BUG FIX — `showScrollHint` was referenced inside the
- *    ScrollTrigger config object (`onEnter`/`onEnterBack`) but declared
- *    with `const` *below* the `gsap.timeline()` call that creates that
- *    trigger. ScrollTrigger fires `onEnter` synchronously during creation
- *    when the trigger element is already in view at that moment — e.g. a
- *    reload with the page already scrolled to this section, or a
- *    deep-link to #who-we-are. In exactly that case the callback hit the
- *    temporal dead zone and threw a ReferenceError, taking the rest of
- *    the timeline setup down with it (no pin, no reveals). The function
- *    is now declared before the timeline that references it.
- * 3) 01 / 02 / 03 MARKERS REMOVED. The three capabilities are parallel
- *    offerings, not steps in a process, so numbering them encoded
- *    something untrue. Each row now carries a small state dot instead —
- *    outlined at rest, filled while that row owns the photo frame. The
- *    spotlight handoff animates it exactly where it used to animate the
- *    index's colour, so the timing is unchanged.
- * 4) `mark` is gone from the CAPABILITIES data, and the JSON-LD no longer
- *    carries a position-based ordering hint for what is an unordered set.
- *
- * ── Round 10 recap (still current) ─────────────────────────────────────────
- * The intro heading's exit distance is measured from the viewport's own
- * half-width plus half the heading's width — moving left by only "its own
- * width" doesn't clear the screen unless the heading happens to be wider
- * than ~1.5x the viewport, which is what used to leave "we?" stranded on
- * screen overlapping the capability list. The scroll hint is driven by
- * real elapsed time (not scrub progress) so it gets a readable couple of
- * seconds regardless of scroll speed. TOTAL_VH is 5.5 so the whole pinned
- * story doesn't feel rushed. The progress dot glides via quickTo and its
- * travel distance is measured from the rendered track at runtime.
+ * ── What changed vs the previous version (round 10) ───────────────────────────
+ * 1) REAL FIX for the "Who are we?" misalignment/jump — the actual bug
+ *    (found by reviewing a screen recording) had nothing to do with font
+ *    size. The intro heading's exit-slide moved it left by exactly its
+ *    own rendered width (`-(introEl.offsetWidth + BUFFER)`), which only
+ *    fully clears the viewport when the heading happens to be wider than
+ *    roughly 1.5x the viewport width. At the original large font size on
+ *    a wide-enough screen that was coincidentally true; at smaller sizes
+ *    (or on some laptop widths) it wasn't, so the tail end of the heading
+ *    was left stranded on screen, overlapping later content — exactly the
+ *    "we?" hanging around next to the capability list seen in the
+ *    recording. The exit distance is now computed from the viewport's own
+ *    half-width plus half the heading's width, which guarantees full
+ *    clearance regardless of the heading's size. Round 9's height-based
+ *    font shrink is reverted back down to a single, much gentler
+ *    safety-net breakpoint (`max-height: 640px`) instead of a formula that
+ *    was cutting the heading down by 30-40% on ordinary laptop screens.
+ * 2) SCROLL HINT, PROPERLY VISIBLE THIS TIME — round 9 tied the hint's
+ *    fade in/out to scroll *progress*, so at normal scroll speed it was
+ *    on screen for well under half a second — technically there, but not
+ *    actually readable. It's now driven by the ScrollTrigger's
+ *    `onEnter`/`onEnterBack` callbacks instead of the scrubbed timeline:
+ *    it fades in the instant the section pins, holds for a fixed ~2
+ *    seconds of real time, then fades out — regardless of how fast or
+ *    slow the person scrolls.
+ * 3) SLOWER, LESS RUSHED PACING — `TOTAL_VH` (how much physical scrolling
+ *    the whole pinned story takes) is raised from 3.4 to 5.5 viewport-
+ *    heights. Every phase's proportions stay the same, but each one now
+ *    takes noticeably more scrolling to play out, so the reveals feel
+ *    slower and less rushed for the same scroll input.
+ * 4) ANIMATION POLISH — the progress-rail dot now tracks scroll through a
+ *    `gsap.quickTo` tween instead of being hard-set every frame, so it
+ *    glides instead of ticking; the "Who" highlight now lands with a
+ *    slight overshoot (`back.out`) instead of a flat ease-out; the
+ *    capability photo wipes use `expo` easing for a smoother sweep; the
+ *    capability stage + list now scale in slightly (0.97 → 1) alongside
+ *    their existing fade, instead of just fading; and each capability's
+ *    photo keeps a slow, continuous Ken-Burns drift for the rest of its
+ *    hold instead of going fully static the instant its reveal finishes.
+ *    Mobile's per-row reveals were brought in line with the same easing
+ *    so both breakpoints feel like one animation language.
+ * 4) SEO — the services JSON-LD now wraps each service in a proper
+ *    `ListItem` (schema.org's actual shape for `ItemList`, rather than
+ *    dropping `Service` entries straight into `itemListElement`), and
+ *    each capability photo's `alt` now falls back to its label instead of
+ *    an empty string, since these are meaningful content images, not
+ *    decorative ones.
+ * 5) RESPONSIVE — added a mid-width (1024–1180px) breakpoint so the
+ *    two-column layout doesn't feel cramped right at the desktop
+ *    threshold, and the progress-rail dot's travel distance is now
+ *    measured from the actual rendered track/dot height at runtime
+ *    instead of a hardcoded pixel pair that had to be kept in sync with
+ *    the CSS by hand.
  *
  * ── Round 8 recap (still current) ──────────────────────────────────────────
  * fastScrollEnd + scrub 0.35 (was 1) so a fast fling can't blow through the
  * pin before the scrub tween catches up — pair with SmoothScrollProvider
  * (Lenis) at the app root for the input side of the same fix.
  *
- * ── Round 6/7 recap (still current) ────────────────────────────────────────
- * No black-flash-on-load, no portrait crop of landscape photos, a
- * directional clip-path wipe + Ken-Burns pop instead of a plain
- * crossfade, centered row alignment, real alt text, and JSON-LD for the
- * three services.
+ * ── Round 7 recap (still current) ──────────────────────────────────────────
+ * Blur-reveal on every capability photo (including the first), real alt
+ * text wired into next/image, and JSON-LD structured data for the three
+ * services.
  *
- * Everything else (SplitText intro structure, the lede reveal, the closing
- * line, the background rings + cursor parallax, and the
+ * ── Round 6 recap (still current) ──────────────────────────────────────────
+ * Fixed the black-flash-on-load, the portrait crop of landscape photos,
+ * the plain crossfade (now a directional clip-path wipe + Ken-Burns pop),
+ * and row alignment (centered instead of baseline).
+ *
+ * Everything else (SplitText intro heading structure, the lede reveal, the
+ * closing line, the background rings + cursor parallax, and the
  * prefers-reduced-motion / no-JS handling via matchMedia) is untouched.
  */
 
 import { useLayoutEffect, useRef } from "react";
 import Image from "next/image";
-import { Fraunces, Space_Mono, Space_Grotesk } from "next/font/google";
+import { Space_Grotesk, Manrope } from "next/font/google";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
@@ -98,28 +101,19 @@ if (typeof window !== "undefined") {
   ScrollTrigger.config({ ignoreMobileResize: true, fastScrollEnd: true });
 }
 
-// Self-hosted via next/font — no external request, no layout shift. The
-// three roles deliberately mirror the hero's, so the two sections read as
-// one site: serif carries the display sentence, mono carries anything
-// "stamped" (the Who block, the capability labels), sans carries body.
-const displayFont = Fraunces({
+// Self-hosted, deliberately-paired fonts (next/font — no external request,
+// no layout shift). Display font carries the headline, the lede and the
+// capability labels; body font carries the descriptions and closing line.
+const displayFont = Space_Grotesk({
   subsets: ["latin"],
-  weight: ["500", "600"],
-  style: ["italic", "normal"],
+  weight: ["500", "700"],
   variable: "--waw-font-display",
   display: "swap",
 });
 
-const stampFont = Space_Mono({
+const bodyFont = Manrope({
   subsets: ["latin"],
-  weight: ["700"],
-  variable: "--waw-font-stamp",
-  display: "swap",
-});
-
-const bodyFont = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["400", "500", "600"],
   variable: "--waw-font-body",
   display: "swap",
 });
@@ -141,28 +135,20 @@ const PHASE = {
   closingReveal: [0.88, 0.98],
 };
 const span = (k) => PHASE[k][1] - PHASE[k][0];
-// Same phase proportions as earlier rounds, spread over more physical
-// scrolling, so every reveal (including the scroll hint's window) has room
-// to register instead of flashing by.
+// Was 3.4 — the whole pinned story played out too fast for a natural scroll
+// speed. Same phase proportions, just spread over more physical scrolling,
+// so every reveal (including the scroll hint's window) has more room to
+// actually register instead of flashing by.
 const TOTAL_VH = 5.5; // viewport-heights of scroll the whole story consumes
 const BUFFER = 80;
 // Sane fallbacks only — the progress dot's real travel distance is measured
 // from the rendered track/dot at runtime (see measureProgressTrack below),
-// so these don't need to be hand-kept in sync with the CSS.
+// so these no longer need to be hand-kept in sync with the CSS.
 const PROGRESS_TRACK_PX = 120;
 const PROGRESS_DOT_PX = 8;
 
-// Ink values kept in one place so the JS-driven colour tweens and the
-// stylesheet can't drift apart. These are the hero's exact values.
-const INK = "#0b0b0c";
-const PAPER = "#ffffff";
-const INK_MUTED = "rgba(11, 11, 12, 0.46)";
-const PAPER_MUTED = "rgba(255, 255, 255, 0.78)";
-
 // The lede is the one idea worth saying big. Kept to two short lines on
-// purpose — everything else lives in the capability list below it. The
-// second line is the emphasised one (full black against the first line's
-// muted ink — see .waw-lede-accent).
+// purpose — everything else lives in the capability list below it.
 const LEDE_LINES = [
   { text: "From qualified leads to a digital presence people actually trust,", accent: false },
   { text: "we're the team that runs the whole engine.", accent: true },
@@ -175,6 +161,7 @@ const SCROLL_HINT_TEXT = "Scroll slowly for the best experience";
 const CAPABILITIES = [
   {
     label: "Email marketing",
+    mark: "01",
     description: "Campaigns people actually open, click, and remember.",
     media: {
       type: "image",
@@ -184,6 +171,7 @@ const CAPABILITIES = [
   },
   {
     label: "Lead generation",
+    mark: "02",
     description: "Funnels engineered to turn visits into qualified leads.",
     media: {
       type: "image",
@@ -193,13 +181,13 @@ const CAPABILITIES = [
   },
   {
     label: "Web development",
+    mark: "03",
     description: "Fast, conversion-ready sites built to hold up at scale.",
     media: {
-      // Switch `type` to "video" and point `src` at a self-hosted,
-      // compressed clip (ideally <1MB, no audio track) to use footage
-      // here instead — the <video> branch below is already wired up,
-      // including a poster and play-on-reveal.
       type: "image",
+      // Swap for your own self-hosted, compressed (ideally <1MB, no audio
+      // track) clip before shipping — this MDN clip is a public-domain
+      // placeholder so the layout is real end-to-end.
       src: "/web-development.png",
       alt: "Responsive web development project preview",
     },
@@ -217,19 +205,21 @@ const HIDDEN_CLIP = "inset(0% 0% 0% 100%)";
 const VISIBLE_CLIP = "inset(0% 0% 0% 0%)";
 
 // Structured data so search engines can read the three services directly,
-// independent of the scroll-linked reveal animation. These are parallel
-// offerings rather than a ranked or sequenced list, so this is a plain
-// ItemList of Services with `itemListOrder` marked unordered — matching
-// the UI, which no longer numbers them either.
+// independent of the scroll-linked reveal animation. Each service is
+// wrapped in a ListItem, which is schema.org's actual shape for ItemList
+// (rather than dropping Service entries straight into itemListElement).
 const SERVICES_JSON_LD = {
   "@context": "https://schema.org",
   "@type": "ItemList",
   name: "Services",
-  itemListOrder: "https://schema.org/ItemListUnordered",
-  itemListElement: CAPABILITIES.map((cap) => ({
-    "@type": "Service",
-    name: cap.label,
-    description: cap.description,
+  itemListElement: CAPABILITIES.map((cap, i) => ({
+    "@type": "ListItem",
+    position: i + 1,
+    item: {
+      "@type": "Service",
+      name: cap.label,
+      description: cap.description,
+    },
   })),
 };
 
@@ -239,7 +229,7 @@ export default function WhoAreWe() {
   const introRestRef = useRef(null);
   const highlightRef = useRef(null);
   const storyRef = useRef(null);
-  const ledeRef = useRef(null);
+  const ledeLineRefs = useRef([]);
   const scrollHintRef = useRef(null);
   const capabilityBlockRef = useRef(null);
   const capabilitiesListRef = useRef(null);
@@ -266,10 +256,7 @@ export default function WhoAreWe() {
         const introRest = introRestRef.current;
         const highlight = highlightRef.current;
         const story = storyRef.current;
-        // Per-word, not per-line — see the round 12 note in the header and
-        // the lede block in WhoAreWe.css for why the old per-sentence mask
-        // sliced wrapped lines in half.
-        const ledeWords = ledeRef.current.querySelectorAll(".waw-lede-word-inner");
+        const ledeLines = ledeLineRefs.current.filter(Boolean);
         const scrollHint = scrollHintRef.current;
         const closing = closingRef.current;
         const ringsLayer = ringsLayerRef.current;
@@ -281,9 +268,7 @@ export default function WhoAreWe() {
         const fills = capabilitiesListRef.current.querySelectorAll(".waw-capability-fill");
         const capLabels = capabilitiesListRef.current.querySelectorAll(".waw-capability-label");
         const capDescs = capabilitiesListRef.current.querySelectorAll(".waw-capability-desc");
-        // Replaces the old numeric indices — outlined at rest, filled while
-        // its row owns the photo frame.
-        const capMarks = capabilitiesListRef.current.querySelectorAll(".waw-capability-mark");
+        const capIndices = capabilitiesListRef.current.querySelectorAll(".waw-capability-index");
         // The shared photo/video stack (queried from the stage only) — the
         // wrapper divs (clip-path drives their reveal) and, separately, the
         // <img>/<video> inside each one (scale drives the Ken-Burns pop).
@@ -315,7 +300,7 @@ export default function WhoAreWe() {
           filter: "blur(10px)",
         });
         gsap.set(highlight, { autoAlpha: 0, x: -40 });
-        gsap.set(ledeWords, { yPercent: 130, opacity: 0, filter: "blur(6px)" });
+        gsap.set(ledeLines, { yPercent: 130, opacity: 0 });
         gsap.set(scrollHint, { autoAlpha: 0, y: 8 });
         gsap.set(revealTargets, { opacity: 0, y: "1.4rem", scale: 0.97, filter: "blur(10px)" });
         gsap.set(fills, { scaleX: 0 });
@@ -334,17 +319,16 @@ export default function WhoAreWe() {
         gsap.set(stageMediaInner, { scale: 1.18, filter: blurHidden });
         gsap.set(stageMediaInner[0], { scale: 1, filter: blurHidden });
 
-        // Light up row i: black fill wipes in, its text flips white, its
-        // state dot fills, and its photo takes over the stage. Whenever
-        // i > 0, the SAME beat sends row i-1 back to its resting look — so
-        // the highlight always reads as one spotlight handing off down the
-        // list, never as two rows lit (or none) at once. Row 0 is the
-        // exception: its photo is already resting in the stage from mount
-        // (see above), so lighting it up only needs the row styling plus a
-        // small confirm pop on the photo — not a full wipe-in. Whichever
-        // photo ends up active keeps a slow, continuous Ken-Burns drift for
-        // the rest of its hold, so it never goes fully static the instant
-        // its own reveal finishes.
+        // Light up row i: black fill wipes in, its text flips white, and its
+        // photo takes over the stage. Whenever i > 0, the SAME beat sends
+        // row i-1 back to its resting look — so the highlight always reads
+        // as one spotlight handing off down the list, never as two rows lit
+        // (or none) at once. Row 0 is the exception: its photo is already
+        // resting in the stage from mount (see above), so lighting it up
+        // only needs the row styling plus a small confirm pop on the photo
+        // — not a full wipe-in. Whichever photo ends up active keeps a
+        // slow, continuous Ken-Burns drift for the rest of its hold, so it
+        // never goes fully static the instant its own reveal finishes.
         const activateCapability = (i, phaseKey) => {
           const [start] = PHASE[phaseKey];
           const dur = span(phaseKey);
@@ -358,13 +342,9 @@ export default function WhoAreWe() {
           const driftDur = Math.max(dur - wipe, 0);
 
           tl.to(fills[i], { scaleX: 1, ease: "power4.out", duration: snap }, start)
-            .to(capLabels[i], { color: PAPER, ease: "power2.out", duration: snap }, start)
-            .to(capDescs[i], { color: PAPER_MUTED, ease: "power2.out", duration: snap }, start)
-            .to(
-              capMarks[i],
-              { backgroundColor: PAPER, borderColor: PAPER, ease: "power2.out", duration: snap },
-              start
-            );
+            .to(capLabels[i], { color: "#ffffff", ease: "power2.out", duration: snap }, start)
+            .to(capDescs[i], { color: "rgba(255,255,255,0.78)", ease: "power2.out", duration: snap }, start)
+            .to(capIndices[i], { color: "#ffffff", ease: "power2.out", duration: snap }, start);
 
           if (i === 0) {
             // Row 0's photo is already resting in the stage — this is a
@@ -417,18 +397,9 @@ export default function WhoAreWe() {
 
           if (i > 0) {
             tl.to(fills[i - 1], { scaleX: 0, ease: "power3.inOut", duration: snap }, start)
-              .to(capLabels[i - 1], { color: INK, ease: "power2.inOut", duration: snap }, start)
-              .to(capDescs[i - 1], { color: INK_MUTED, ease: "power2.inOut", duration: snap }, start)
-              .to(
-                capMarks[i - 1],
-                {
-                  backgroundColor: "rgba(11, 11, 12, 0)",
-                  borderColor: INK_MUTED,
-                  ease: "power2.inOut",
-                  duration: snap,
-                },
-                start
-              );
+              .to(capLabels[i - 1], { color: "#0a0a0a", ease: "power2.inOut", duration: snap }, start)
+              .to(capDescs[i - 1], { color: "rgba(10,10,10,0.46)", ease: "power2.inOut", duration: snap }, start)
+              .to(capIndices[i - 1], { color: "rgba(10,10,10,0.46)", ease: "power2.inOut", duration: snap }, start);
           }
         };
 
@@ -455,36 +426,16 @@ export default function WhoAreWe() {
           // it was ticking rather than tracking.
           const setDotY = gsap.quickTo(progressDot, "y", { duration: 0.18, ease: "power2.out" });
 
-          // MUST be declared before the timeline below, not after it.
-          // ScrollTrigger fires onEnter synchronously while creating the
-          // trigger if the element is already in view at that moment (a
-          // reload mid-page, a #who-we-are deep link). Declaring this
-          // afterwards put it in the temporal dead zone for exactly that
-          // case, and the ReferenceError took the whole timeline setup
-          // down with it.
-          //
-          // Fades the hint in, holds it for a fixed real-world duration,
-          // then fades it out — completely independent of the scrubbed
-          // timeline, so scroll speed can't cut it short.
-          const showScrollHint = () => {
-            if (!scrollHint) return;
-            gsap.killTweensOf(scrollHint);
-            gsap
-              .timeline()
-              .to(scrollHint, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power2.out" })
-              .to(scrollHint, { autoAlpha: 0, y: -8, duration: 0.5, ease: "power2.in" }, "+=1.8");
-          };
-
           tl = gsap.timeline({
             scrollTrigger: {
               trigger: pin,
               start: "top top",
               end: () => `+=${Math.round(window.innerHeight * TOTAL_VH)}`,
-              // A full second of smoothing on this timeline let fast
-              // scrolls blow past the pin before the tween caught up,
-              // which is what made the reveals look like they "didn't
-              // play". 0.35 keeps the scrub feel but tracks the scrollbar
-              // far more tightly.
+              // Was 1 — a full second of smoothing on a 3.4vh timeline let
+              // fast scrolls blow past the pin before the tween caught up,
+              // which is what made the intro/lede/capability reveals look
+              // like they "didn't play" on quick scrolls. 0.35 keeps the
+              // scrub feel but tracks the scrollbar far more tightly.
               scrub: 0.35,
               pin: true,
               anticipatePin: 1,
@@ -493,14 +444,27 @@ export default function WhoAreWe() {
               onUpdate: (self) => {
                 setDotY(self.progress * (trackMetrics.height - trackMetrics.dot));
               },
-              // The hint is driven by real elapsed time (see above), not
-              // scroll progress, so it reliably gets a couple of readable
-              // seconds on screen no matter how fast someone scrolls into
-              // the section. onEnter/onEnterBack cover both directions.
+              // The hint is driven by real elapsed time (below), not scroll
+              // progress, so it reliably gets a couple of readable seconds
+              // on screen no matter how fast someone scrolls into the
+              // section. onEnter/onEnterBack cover scrolling in from either
+              // direction.
               onEnter: () => showScrollHint(),
               onEnterBack: () => showScrollHint(),
             },
           });
+
+          // Fades the hint in, holds it for a fixed real-world duration,
+          // then fades it out — completely independent of the scrubbed
+          // timeline above, so scroll speed can't cut it short.
+          const showScrollHint = () => {
+            if (!scrollHint) return;
+            gsap.killTweensOf(scrollHint);
+            gsap
+              .timeline()
+              .to(scrollHint, { autoAlpha: 1, y: 0, duration: 0.4, ease: "power2.out" })
+              .to(scrollHint, { autoAlpha: 0, y: -8, duration: 0.5, ease: "power2.in" }, "+=1.8");
+          };
 
           // Act 1 — "Who are we?"
           // Exit distance is measured from the viewport's own half-width
@@ -547,16 +511,13 @@ export default function WhoAreWe() {
             PHASE.storySlide[0]
           );
           tl.to(
-            ledeWords,
+            ledeLines,
             {
               yPercent: 0,
               opacity: 1,
-              filter: "blur(0px)",
-              ease: "expo.out",
+              ease: "power3.out",
               duration: span("ledeReveal"),
-              // Spread across roughly the first two-thirds of the phase so
-              // the last word still has room to finish inside it.
-              stagger: span("ledeReveal") / (ledeWords.length * 1.5),
+              stagger: 0.12,
             },
             PHASE.ledeReveal[0]
           );
@@ -632,7 +593,7 @@ export default function WhoAreWe() {
 
           reveal(chars, introEl, { stagger: 0.02, duration: 0.5, rotateZ: 0 });
           reveal(highlight, introEl, { x: 0, autoAlpha: 1, ease: "back.out(1.7)", duration: 0.6 });
-          reveal(ledeWords, story, { stagger: 0.025, duration: 0.8 });
+          reveal(ledeLines, story, { stagger: 0.12 });
           reveal(revealTargets, capabilityBlockRef.current, { stagger: 0.12, onStart: startVideo });
           reveal(closing, closing, { duration: 0.6 });
 
@@ -652,13 +613,9 @@ export default function WhoAreWe() {
               driftTween?.kill();
               driftTween = null;
               gsap.to(fills[activeIndex], { scaleX: 0, duration: 0.45, ease: "power3.inOut" });
-              gsap.to(capLabels[activeIndex], { color: INK, duration: 0.45 });
-              gsap.to(capDescs[activeIndex], { color: INK_MUTED, duration: 0.45 });
-              gsap.to(capMarks[activeIndex], {
-                backgroundColor: "rgba(11, 11, 12, 0)",
-                borderColor: INK_MUTED,
-                duration: 0.45,
-              });
+              gsap.to(capLabels[activeIndex], { color: "#0a0a0a", duration: 0.45 });
+              gsap.to(capDescs[activeIndex], { color: "rgba(10,10,10,0.46)", duration: 0.45 });
+              gsap.to(capIndices[activeIndex], { color: "rgba(10,10,10,0.46)", duration: 0.45 });
               gsap.to(stageMediaInner[activeIndex], {
                 scale: 1.08,
                 filter: blurOut,
@@ -674,9 +631,9 @@ export default function WhoAreWe() {
             }
 
             gsap.to(fills[i], { scaleX: 1, duration: 0.45, ease: "power4.out" });
-            gsap.to(capLabels[i], { color: PAPER, duration: 0.45 });
-            gsap.to(capDescs[i], { color: PAPER_MUTED, duration: 0.45 });
-            gsap.to(capMarks[i], { backgroundColor: PAPER, borderColor: PAPER, duration: 0.45 });
+            gsap.to(capLabels[i], { color: "#ffffff", duration: 0.45 });
+            gsap.to(capDescs[i], { color: "rgba(255,255,255,0.78)", duration: 0.45 });
+            gsap.to(capIndices[i], { color: "#ffffff", duration: 0.45 });
 
             const startDrift = () => {
               driftTween = gsap.to(stageMediaInner[i], {
@@ -752,7 +709,7 @@ export default function WhoAreWe() {
     <section
       id="who-we-are"
       aria-labelledby="who-we-are-heading"
-      className={`waw-section ${displayFont.variable} ${stampFont.variable} ${bodyFont.variable}`}
+      className={`waw-section ${displayFont.variable} ${bodyFont.variable}`}
     >
       {/* Structured data for the three services — read by crawlers straight
           from markup, independent of the scroll-linked reveal animation. */}
@@ -778,9 +735,7 @@ export default function WhoAreWe() {
         </div>
 
         <div className="waw-stage" ref={stageRef}>
-          {/* ---------- "Who are we?" — italic serif sentence with "Who"
-               stamped in a solid mono block, mirroring the hero's headline
-               construction. ---------- */}
+          {/* ---------- "Who are we?" — unchanged from the previous round ---------- */}
           <h2 id="who-we-are-heading" className="waw-heading waw-intro">
             <span className="waw-sr-only">Who are we?</span>
             <span aria-hidden="true">
@@ -793,37 +748,20 @@ export default function WhoAreWe() {
             </span>
           </h2>
 
-          {/* ---------- the statement section ---------- */}
+          {/* ---------- the statement section (lede unchanged; capabilities rebuilt) ---------- */}
           <div className="waw-statement-wrap">
             <div className="waw-story" ref={storyRef}>
-              {/* Per-word masks. A word can never wrap inside itself, so
-                  each mask is always exactly one visual line tall — which
-                  is what stops the wrapped lines being sliced in half
-                  mid-reveal. The visible copy is shredded into spans, so
-                  AT and crawlers get one clean sentence pair above it. */}
-              <p className="waw-lede" ref={ledeRef}>
-                <span className="waw-sr-only">
-                  {LEDE_LINES.map((line) => line.text).join(" ")}
-                </span>
-                <span aria-hidden="true" className="waw-lede-lines">
-                  {LEDE_LINES.map((line) => (
+              <p className="waw-lede">
+                {LEDE_LINES.map((line, i) => (
+                  <span className="waw-lede-line-mask" key={line.text}>
                     <span
-                      className={`waw-heading waw-lede-line${
-                        line.accent ? " waw-lede-accent" : ""
-                      }`}
-                      key={line.text}
+                      className={`waw-heading waw-lede-line${line.accent ? " waw-lede-accent" : ""}`}
+                      ref={(el) => (ledeLineRefs.current[i] = el)}
                     >
-                      {line.text.split(" ").map((word, wi, arr) => (
-                        <span className="waw-lede-word-mask" key={wi}>
-                          <span className="waw-lede-word-inner">
-                            {word}
-                            {wi < arr.length - 1 ? "\u00A0" : ""}
-                          </span>
-                        </span>
-                      ))}
+                      {line.text}
                     </span>
-                  ))}
-                </span>
+                  </span>
+                ))}
               </p>
 
               {/* Shared "stage" + list: only one row is ever highlighted, and
@@ -868,7 +806,9 @@ export default function WhoAreWe() {
                           <h3 className="waw-capability-label">{cap.label}</h3>
                           <p className="waw-capability-desc">{cap.description}</p>
                         </div>
-                        <span className="waw-capability-mark" aria-hidden="true" />
+                        <span className="waw-capability-index" aria-hidden="true">
+                          {cap.mark}
+                        </span>
                       </div>
                     </li>
                   ))}
