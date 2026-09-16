@@ -9,44 +9,41 @@ import {
   useRef,
 } from "react";
 import Link from "next/link";
-import { Fraunces, Space_Mono } from "next/font/google";
+import { Bricolage_Grotesque } from "next/font/google";
 import gsap from "gsap";
 
 /**
- * Hero — v9
+ * Hero — v8
  *
- * What changed vs v8:
- *  - Full visual redesign: a strict black-and-white palette replacing
- *    the previous red/blue/gold system. No hue anywhere — contrast and
- *    motion carry the page instead of color.
- *  - Headline now mixes two typefaces on purpose: an italic serif
- *    (Fraunces, self-hosted via next/font/google as `--font-serif`)
- *    for the connecting words, and a bold mono "stamp" face (Space
- *    Mono, `--font-mono-stamp`) reserved for the subject of each line
- *    ("Interfaces" / "Inboxes"), set inside a solid block. Line one's
- *    block is filled; line two's is the inverse (outline). Hovering a
- *    block swaps it to the other treatment — the one deliberate,
- *    recurring "flip" interaction the rest of the page's hover states
- *    (logo, menu button) echo, rather than a one-off accent.
- *  - Added a small pair of eyes above the headline that track the
- *    cursor (GSAP quickTo, direct DOM, no React state on every move)
- *    and blink on an irregular timer. Purely decorative
- *    (aria-hidden) — a bit of warmth against all the straight edges.
- *  - Added a vertical "SCROLL TO EXPLORE" label on the right edge —
- *    doubles as the page's only scroll affordance, so it earns its
- *    place rather than sitting alongside a separate one.
- *  - Nav mark and menu button now share the same invert-on-hover logic
- *    as the headline blocks (solid <-> outline), and pick up a small
- *    magnetic pull toward the cursor (GSAP quickTo) — both cheap,
- *    both consistent with the rest of the interaction language.
- *  - A very faint fractal-noise layer sits behind everything at ~3.5%
- *    opacity (mix-blend: multiply) so the white reads as paper rather
- *    than a screen. It's a decorative ::before, not a real element, so
- *    it can't intercept clicks or shift layout.
- *  - Scramble hover-decode no longer swaps in a color spark; the
- *    "about to resolve" flip now pops the letter's scale instead
- *    (`.is-spark { transform: scale(...) }`), so the effect reads the
- *    same over both the plain serif words and the filled mono blocks.
+ * What changed vs v7:
+ *  - The Bricolage Grotesque display face is now loaded via
+ *    next/font/google instead of the render-blocking `@import` — v7's
+ *    own comments already flagged this as the intended next step. This
+ *    self-hosts the font (no third-party request), removes the
+ *    render-blocking `@import`, and gives the headline — almost
+ *    certainly the page's LCP element — a matched-metric fallback that
+ *    next/font generates automatically, cutting the layout shift a
+ *    cross-origin swap would otherwise cause. Exposed the same way
+ *    Space Grotesk already is elsewhere: as a CSS variable
+ *    (`--font-bricolage`) via `displayFont.variable`, scoped to this
+ *    section.
+ *  - The logo mark is now a real link to "/" (via next/link) instead of
+ *    a plain span — crawlable, and standard behaviour for a site mark.
+ *  - The menu button's hit area is now a full 44×44px (was ~30×25px,
+ *    under the usual minimum recommended touch-target size) without
+ *    changing how the icon looks — the bars are sized independently of
+ *    the button's box now. Also added `type="button"` so it can never
+ *    accidentally submit a form if this ever ends up inside one.
+ *  - The sub-copy's word-by-word reveal no longer leaves a trailing
+ *    &nbsp; after the very last word.
+ *  - The scroll handler that re-measures every letter's position now
+ *    batches through requestAnimationFrame instead of running on every
+ *    single scroll event, so a fast scroll doesn't force a
+ *    getBoundingClientRect() layout read per letter per event.
+ *  - The headline's font-size floor is lowered slightly (2.75rem →
+ *    2.3rem); it only changes anything below ~460px-wide viewports —
+ *    everything from small phones up through desktop renders pixel-
+ *    identical to before.
  *
  * What did NOT change: ScrambleHeadline's width-lock-after-fonts-ready
  * and text-content-keyed setup effect are the fix for a real bug (see
@@ -58,24 +55,14 @@ import gsap from "gsap";
  *    True by default; Preloader sets this explicitly via cloneElement.
  */
 
-// Serif for the headline's plain words — self-hosted, so no
-// third-party request and a matched-metric fallback from next/font.
-const displayFont = Fraunces({
+// Self-hosted, variable-weight display face for the headline only — body
+// copy stays on the existing Space Grotesk (loaded the same way
+// elsewhere and exposed as --font-space-grotesk). Scoped to this
+// section via displayFont.variable on the <section>, same pattern as
+// the site's other components.
+const displayFont = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: ["500", "600"],
-  style: ["italic", "normal"],
-  variable: "--font-serif",
-  display: "swap",
-});
-
-// Bold mono for the headline's "stamped" words only — deliberately a
-// second, clearly-distinct family (see the file header), not used
-// anywhere else on the page except the nav mark and the edge label,
-// which borrow it to tie the chrome back to the headline's device.
-const stampFont = Space_Mono({
-  subsets: ["latin"],
-  weight: ["700"],
-  variable: "--font-mono-stamp",
+  variable: "--font-bricolage",
   display: "swap",
 });
 
@@ -91,14 +78,11 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
   const navMenuRef = useRef(null);
   const headlineRef = useRef(null);
   const subRef = useRef(null);
-  const eyesRef = useRef(null);
-  const pupilRefs = useRef([]);
-  const edgeTagRef = useRef(null);
 
-  // Hide nav + eyes + edge label + headline + sub-copy words up front
-  // *only* if we're going to be revealed later (i.e. a Preloader
-  // controls us) — otherwise Hero used standalone would flash blank
-  // content with nothing to un-hide it.
+  // Hide nav + headline + sub-copy words up front *only* if
+  // we're going to be revealed later (i.e. a Preloader controls us) —
+  // otherwise Hero used standalone would flash blank content with
+  // nothing to un-hide it.
   useLayoutEffect(() => {
     if (!revealed) {
       const headlineWords = headlineRef.current?.querySelectorAll(
@@ -113,8 +97,6 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         opacity: 0,
         y: -10,
       });
-      gsap.set(eyesRef.current, { opacity: 0, scale: 0.6 });
-      gsap.set(edgeTagRef.current, { opacity: 0, x: 10 });
 
       const words = subRef.current?.querySelectorAll(".word-inner");
       gsap.set(words, { yPercent: 130, opacity: 0, filter: "blur(6px)" });
@@ -143,8 +125,6 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         opacity: 1,
         y: 0,
       });
-      gsap.set(eyesRef.current, { opacity: 1, scale: 1 });
-      gsap.set(edgeTagRef.current, { opacity: 1, x: 0 });
       gsap.set(words, { yPercent: 0, opacity: 1, filter: "blur(0px)" });
       return;
     }
@@ -157,20 +137,6 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
       [navMarkRef.current, navMenuRef.current],
       { opacity: 1, y: 0, duration: 0.55, stagger: 0.06 },
       0
-    );
-
-    // the eyes wake up next, with a bit of overshoot — the one purely
-    // playful beat before the headline's straighter motion
-    tl.to(
-      eyesRef.current,
-      { opacity: 1, scale: 1, duration: 0.6, ease: "back.out(2.2)" },
-      0.15
-    );
-
-    tl.to(
-      edgeTagRef.current,
-      { opacity: 1, x: 0, duration: 0.6, ease: "power2.out" },
-      0.3
     );
 
     // headline is the main event: each word cascades up out of its own
@@ -219,115 +185,20 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
     return () => tl.kill();
   }, [revealed]);
 
-  // Cursor-follow pupils + an irregular blink. Independent of
-  // `revealed` — if Hero is ever mounted without a Preloader (see the
-  // guard in the effect above), the eyes should still work.
-  useEffect(() => {
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    if (reduceMotion) return;
-
-    const quickies = pupilRefs.current.map((el) =>
-      el
-        ? {
-            x: gsap.quickTo(el, "x", { duration: 0.35, ease: "power3.out" }),
-            y: gsap.quickTo(el, "y", { duration: 0.35, ease: "power3.out" }),
-          }
-        : null
-    );
-
-    const MAX_DRIFT = 5; // px the pupil can wander from center
-    const REACH = 70; // px of cursor distance before drift maxes out
-
-    const handleMove = (e) => {
-      pupilRefs.current.forEach((el, i) => {
-        if (!el || !quickies[i]) return;
-        const eyeEl = el.parentElement;
-        if (!eyeEl) return;
-        const r = eyeEl.getBoundingClientRect();
-        const dx = e.clientX - (r.left + r.width / 2);
-        const dy = e.clientY - (r.top + r.height / 2);
-        const dist = Math.min(Math.hypot(dx, dy), REACH);
-        const angle = Math.atan2(dy, dx);
-        quickies[i].x(Math.cos(angle) * MAX_DRIFT * (dist / REACH));
-        quickies[i].y(Math.sin(angle) * MAX_DRIFT * (dist / REACH));
-      });
-    };
-    window.addEventListener("mousemove", handleMove);
-
-    // Deliberately irregular interval so the blink never lines up with
-    // anything else on the page and reads as alive, not metronomic.
-    let blinkTimer = null;
-    const blink = () => {
-      const eyes = eyesRef.current?.querySelectorAll(".eye");
-      gsap.to(eyes, {
-        scaleY: 0.08,
-        duration: 0.07,
-        yoyo: true,
-        repeat: 1,
-        ease: "power1.inOut",
-        transformOrigin: "50% 50%",
-      });
-      blinkTimer = setTimeout(blink, 2600 + Math.random() * 3000);
-    };
-    blinkTimer = setTimeout(blink, 2000 + Math.random() * 1200);
-
-    return () => {
-      window.removeEventListener("mousemove", handleMove);
-      clearTimeout(blinkTimer);
-    };
-  }, []);
-
-  // Small magnetic pull on the two nav elements toward the cursor.
-  // Cheap (two quickTo calls, only active while the pointer is over
-  // the element) and consistent with the eyes' use of the same GSAP
-  // pattern elsewhere in this file.
-  useEffect(() => {
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-    if (reduceMotion) return;
-
-    const targets = [navMarkRef.current, navMenuRef.current].filter(Boolean);
-    const cleanups = targets.map((el) => {
-      const xTo = gsap.quickTo(el, "x", { duration: 0.35, ease: "power3.out" });
-      const yTo = gsap.quickTo(el, "y", { duration: 0.35, ease: "power3.out" });
-      const onMove = (e) => {
-        const r = el.getBoundingClientRect();
-        const dx = e.clientX - (r.left + r.width / 2);
-        const dy = e.clientY - (r.top + r.height / 2);
-        xTo(dx * 0.25);
-        yTo(dy * 0.25);
-      };
-      const onLeave = () => {
-        xTo(0);
-        yTo(0);
-      };
-      el.addEventListener("mousemove", onMove);
-      el.addEventListener("mouseleave", onLeave);
-      return () => {
-        el.removeEventListener("mousemove", onMove);
-        el.removeEventListener("mouseleave", onLeave);
-      };
-    });
-
-    return () => cleanups.forEach((fn) => fn());
-  }, []);
-
   return (
-    <section className={`hero ${displayFont.variable} ${stampFont.variable}`} ref={ref}>
+    <section className={`hero ${displayFont.variable}`} ref={ref}>
       <style>{`
         .hero {
           --paper: #FFFFFF;
-          --ink: #0B0B0C;
-          --ink-soft: #6B6B70;
-          --line: rgba(11, 11, 12, 0.14);
+          --ink: #14141c;
+          --ink-soft: #57575f;
+          --line: rgba(20, 20, 28, 0.14);
+          --red: #e6432f;
+          --blue: #2a44ff;
+          --gold: #c98d00;
           --font: var(--font-space-grotesk), ui-sans-serif, system-ui,
             -apple-system, "Segoe UI", sans-serif;
-          --font-display: var(--font-serif), Georgia, "Times New Roman", serif;
-          --font-stamp: var(--font-mono-stamp), "SFMono-Regular", Menlo,
-            Consolas, monospace;
+          --font-display: var(--font-bricolage), var(--font);
 
           position: relative;
           display: flex;
@@ -338,22 +209,9 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           color: var(--ink);
           font-family: var(--font);
           padding: 28px clamp(20px, 4vw, 56px) clamp(56px, 8vw, 96px);
-          overflow: hidden;
         }
         .hero, .hero *, .hero *::before, .hero *::after {
           box-sizing: border-box;
-        }
-        /* faint paper grain — decorative only, sits behind everything
-           and can't intercept clicks or affect layout */
-        .hero::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          z-index: 0;
-          pointer-events: none;
-          opacity: 0.035;
-          mix-blend-mode: multiply;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
         }
         .sr-only {
           position: absolute;
@@ -369,8 +227,6 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
 
         /* Nav */
         .hero__nav {
-          position: relative;
-          z-index: 1;
           flex: 0 0 auto;
           display: flex;
           align-items: center;
@@ -379,31 +235,15 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           border-bottom: 1px solid var(--line);
         }
         .hero__mark {
-          display: inline-flex;
-          align-items: center;
-          font-family: var(--font-stamp);
           font-weight: 700;
-          font-size: 0.82rem;
-          letter-spacing: 0.05em;
-          color: var(--paper);
-          background: var(--ink);
-          padding: 9px 14px;
-          border-radius: 7px;
-          border: 1.5px solid var(--ink);
+          font-size: 1.05rem;
+          letter-spacing: 0.03em;
+          color: inherit;
           text-decoration: none;
-          transition: background 0.2s ease, color 0.2s ease;
-        }
-        .hero__mark:hover {
-          background: var(--paper);
-          color: var(--ink);
-        }
-        .hero__mark:focus-visible {
-          outline: 2px solid var(--ink);
-          outline-offset: 3px;
         }
         /* 44x44 is the usual minimum recommended touch-target size — the
-           button itself provides that hit area, independent of how big
-           the two visible bars are drawn, so the icon doesn't need to
+           button itself now provides that hit area, independent of how
+           big the two visible bars are, so the icon doesn't need to
            grow just to be easier to tap. */
         .hero__menu {
           display: flex;
@@ -416,56 +256,21 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           margin: 0 -7px;
           padding: 0;
           background: none;
-          border: 1.5px solid var(--ink);
-          border-radius: 50%;
+          border: none;
           cursor: pointer;
-          transition: background 0.2s ease;
         }
         .hero__menu span {
           display: block;
-          width: 16px;
+          width: 22px;
           height: 2px;
           background: var(--ink);
-          transition: transform 0.2s ease, background 0.2s ease;
+          transition: transform 0.2s ease, opacity 0.2s ease;
         }
-        .hero__menu:hover { background: var(--ink); }
-        .hero__menu:hover span { background: var(--paper); }
-        .hero__menu:hover span:first-child { transform: translateX(3px); }
-        .hero__menu:hover span:last-child { transform: translateX(-3px); }
+        .hero__menu:hover span:first-child { transform: translateX(4px); }
+        .hero__menu:hover span:last-child { transform: translateX(-4px); }
         .hero__menu:focus-visible {
-          outline: 2px solid var(--ink);
+          outline: 2px solid var(--blue);
           outline-offset: 4px;
-        }
-
-        /* Edge label — doubles as the page's only scroll affordance */
-        .hero__edge-tag {
-          position: absolute;
-          z-index: 1;
-          right: clamp(10px, 2vw, 26px);
-          top: 50%;
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          writing-mode: vertical-rl;
-          transform: translateY(-50%) rotate(180deg);
-          font-family: var(--font-stamp);
-          font-size: 0.68rem;
-          letter-spacing: 0.18em;
-          color: var(--ink-soft);
-        }
-        .hero__edge-dot {
-          width: 6px;
-          height: 6px;
-          border-radius: 50%;
-          background: var(--ink);
-          animation: heroPulse 1.8s ease-in-out infinite;
-        }
-        @keyframes heroPulse {
-          0%, 100% { opacity: 0.25; transform: scale(0.8); }
-          50% { opacity: 1; transform: scale(1); }
-        }
-        @media (max-width: 780px) {
-          .hero__edge-tag { display: none; }
         }
 
         /* Content — centered, single column, vertically centered in
@@ -475,7 +280,6 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
            viewport. */
         .hero__stage {
           position: relative;
-          z-index: 1;
           flex: 1 1 auto;
           display: flex;
           align-items: center;
@@ -491,42 +295,16 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           margin: 0 auto;
         }
 
-        /* Curious eyes — purely decorative, aria-hidden. Track the
-           cursor and blink; see the effects above the return. */
-        .hero__eyes {
-          display: flex;
-          gap: 14px;
-          margin-bottom: 20px;
-        }
-        .eye {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          background: var(--paper);
-          border: 1.5px solid var(--ink);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .eye__pupil {
-          width: 10px;
-          height: 10px;
-          border-radius: 50%;
-          background: var(--ink);
-        }
-        @media (max-width: 420px) {
-          .hero__eyes { display: none; }
-        }
-
         .hero__headline {
           margin: 0;
           font-family: var(--font-display);
-          font-weight: 600;
-          font-style: italic;
-          /* Only takes effect under ~460px-wide viewports, so this
-             renders identically to before on every phone/tablet/desktop
-             width above that; it just stops the two headline lines
-             wrapping quite so many times on the narrowest phones. */
+          font-weight: 700;
+          /* Floor lowered from 2.75rem — only takes effect under
+             ~460px-wide viewports (2.75rem / 0.07 ≈ 460px is where the
+             vw term overtakes it), so this line renders identically to
+             before on every phone/tablet/desktop width above that; it
+             just stops the two headline lines wrapping quite so many
+             times on the narrowest phones. */
           font-size: clamp(2.3rem, 7vw, 6.5rem);
           line-height: 1.05;
           letter-spacing: -0.02em;
@@ -549,50 +327,11 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           display: inline-block;
           white-space: nowrap;
         }
-        /* the two "stamped" words (see HEADLINE_LINES) — a bold mono
-           block instead of the plain italic serif. Line one is filled,
-           line two is its outline inverse; hovering either swaps it to
-           the other treatment, echoing the nav's own invert-on-hover. */
-        .scramble-word--boxed {
-          font-family: var(--font-stamp);
-          font-style: normal;
-          font-weight: 700;
-          font-size: 0.92em;
-          letter-spacing: -0.01em;
-          padding: 0.05em 0.32em;
-          border-radius: 8px;
-          transition: background 0.22s ease, color 0.22s ease,
-            box-shadow 0.22s ease, transform 0.22s ease;
-        }
-        .scramble-word--boxed-solid {
-          background: var(--ink);
-          color: var(--paper);
-          transform: rotate(-1.4deg);
-        }
-        .scramble-word--boxed-outline {
-          background: var(--paper);
-          color: var(--ink);
-          box-shadow: inset 0 0 0 2px var(--ink);
-          transform: rotate(1.4deg);
-        }
-        .scramble-word--boxed:hover {
-          transform: rotate(0deg) scale(1.05);
-        }
-        .scramble-word--boxed-solid:hover {
-          background: var(--paper);
-          color: var(--ink);
-          box-shadow: inset 0 0 0 2px var(--ink);
-        }
-        .scramble-word--boxed-outline:hover {
-          background: var(--ink);
-          color: var(--paper);
-          box-shadow: none;
-        }
         .scramble-char {
           display: inline-block;
           text-align: center;
           transition: filter 0.16s ease, opacity 0.16s ease,
-            transform 0.16s ease;
+            color 0.2s ease, transform 0.16s ease;
           filter: blur(0);
           opacity: 1;
         }
@@ -601,11 +340,10 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           opacity: 0.55;
           transform: translateY(-2px);
         }
-        /* the flip right before a letter settles gets a quick scale
-           pop instead of a color change — reads the same over the
-           plain serif words and the filled mono blocks */
+        /* color only hits on the flip right before a letter settles —
+           see ScrambleHeadline's tick loop */
         .scramble-char.is-spark {
-          transform: scale(1.3);
+          color: var(--accent, var(--blue));
         }
 
         .hero__sub {
@@ -632,15 +370,15 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         }
 
         @media (max-width: 640px) {
-          .hero {
-            min-height: auto;
-            padding-top: 28px;
-            padding-bottom: 24px;
-          }
-          .hero__stage {
-            padding-bottom: 0;
-          }
-        }
+  .hero {
+    min-height: auto;
+    padding-top: 28px;
+    padding-bottom: 24px;
+  }
+  .hero__stage {
+    padding-bottom: 0;
+  }
+}
 
         @media (prefers-reduced-motion: reduce) {
           .scramble-char { transition: none; }
@@ -662,22 +400,8 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         </button>
       </header>
 
-      <div className="hero__edge-tag" ref={edgeTagRef}>
-        <span>SCROLL TO EXPLORE</span>
-        <span className="hero__edge-dot" aria-hidden="true" />
-      </div>
-
       <div className="hero__stage">
         <div className="hero__content">
-          <div className="hero__eyes" ref={eyesRef} aria-hidden="true">
-            <span className="eye">
-              <span className="eye__pupil" ref={(el) => (pupilRefs.current[0] = el)} />
-            </span>
-            <span className="eye">
-              <span className="eye__pupil" ref={(el) => (pupilRefs.current[1] = el)} />
-            </span>
-          </div>
-
           <h1 className="hero__headline" ref={headlineRef}>
             <ScrambleHeadline lines={HEADLINE_LINES} />
           </h1>
@@ -702,6 +426,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
 });
 
 const SCRAMBLE_GLYPHS = "!<>{}[]/\\=+*^?#%&~";
+const SPARK_COLORS = ["var(--red)", "var(--blue)", "var(--gold)"];
 const HOVER_RADIUS = 70; // px, how close the cursor has to be to wake a letter
 const DECODE_FLIPS = 4; // glyph flips a letter runs through before it settles
 const FLIP_MS = 46; // base time between flips
@@ -712,21 +437,16 @@ const INTRO_STAGGER_MS = 22; // ms between each letter starting its on-load deco
  * Renders `lines` as one letter-per-span. When the cursor first comes
  * within HOVER_RADIUS of a letter, that letter runs a short, decelerating
  * "decode": a few glyph flips, each crossfaded through a blur, landing
- * back on the real character. The flip immediately before settling gets
- * a quick scale pop rather than a color change (see .is-spark in the
- * stylesheet above) — a single, understated spark at the moment of
- * resolving, rather than something on every flip (which reads as noise
- * once several letters are decoding at once). Letters only re-trigger
- * when the cursor leaves and re-enters their radius, so a stationary
- * cursor settles instead of flickering forever, and a moving cursor
- * reads as a wave of letters waking up in sequence. Everything is
- * direct DOM writes on a rAF loop (no React state) so it stays smooth.
- * Each letter's box width is measured and locked after mount so
- * swapping glyphs never reflows the line.
- *
- * Words at index 0 of each line get the "boxed" treatment (see
- * .scramble-word--boxed) — line 0 filled, line 1 outlined — everything
- * else stays a plain word in the italic serif.
+ * back on the real character. Only the flip immediately before settling
+ * carries an accent color — a single spark at the moment of resolving,
+ * rather than color on every flip (which reads as noise once several
+ * letters are decoding at once). Letters only re-trigger when the cursor
+ * leaves and re-enters their radius, so a stationary cursor settles
+ * instead of flickering forever, and a moving cursor reads as a wave of
+ * letters waking up in sequence. Everything is direct DOM writes on a
+ * rAF loop (no React state) so it stays smooth. Each letter's box width
+ * is measured and locked after mount so swapping glyphs never reflows
+ * the line.
  *
  * IMPORTANT — `lines` should be a STABLE reference (defined outside the
  * component, or memoized by the caller). See this component's setup
@@ -836,9 +556,11 @@ function ScrambleHeadline({ lines, className }) {
     // Lock widths exactly ONCE, only once the real webfont has actually
     // loaded — not immediately at mount. Locking immediately measures
     // each letter against whatever fallback font is showing at that
-    // instant; re-measuring a second time after the swap is what used
-    // to cause a visible jolt of its own. Waiting for document.fonts.ready
-    // and only measuring once means there's nothing left to correct later.
+    // instant (Space Grotesk loads via @import with font-display:swap,
+    // so there's always a fallback-font frame first); re-measuring a
+    // second time after the swap is what used to cause a visible jolt
+    // of its own. Waiting for document.fonts.ready and only measuring
+    // once means there's nothing left to correct later.
     const settle = () => {
       lockWidths();
       measure();
@@ -926,12 +648,16 @@ function ScrambleHeadline({ lines, className }) {
           if (settling) {
             el.textContent = el.dataset.char;
             el.classList.remove("is-spark");
+            el.style.removeProperty("--accent");
             st.decoding = false;
           } else {
             const glyph =
               SCRAMBLE_GLYPHS[(Math.random() * SCRAMBLE_GLYPHS.length) | 0];
             el.textContent = glyph;
             if (isSpark) {
+              const accent =
+                SPARK_COLORS[(Math.random() * SPARK_COLORS.length) | 0];
+              el.style.setProperty("--accent", accent);
               el.classList.add("is-spark");
             } else {
               el.classList.remove("is-spark");
@@ -974,15 +700,7 @@ function ScrambleHeadline({ lines, className }) {
               <Fragment key={wi}>
                 <span className="headline-word-mask">
                   <span className="headline-word-inner">
-                    <span
-                      className={
-                        wi === 0
-                          ? `scramble-word scramble-word--boxed scramble-word--boxed-${
-                              li === 0 ? "solid" : "outline"
-                            }`
-                          : "scramble-word"
-                      }
-                    >
+                    <span className="scramble-word">
                       {word.split("").map((ch, ci) => {
                         idx += 1;
                         const at = idx;
