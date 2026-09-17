@@ -1,5 +1,6 @@
 import { Space_Grotesk, Bricolage_Grotesque, Inter } from "next/font/google";
 import "./globals.css";
+import PageTransition from "../components/PageTransition";
 
 // Same three font families/weights as the old index.html <link> tags —
 // next/font self-hosts them (no external Google Fonts request, no
@@ -98,11 +99,10 @@ export const viewport = {
 
 export default function RootLayout({ children }) {
   return (
-    <html
-      lang="en"
-      className={`${spaceGrotesk.variable} ${bricolageGrotesque.variable} ${inter.variable}`}
-    >
-      <body>{children}</body>
+    <html lang="en">
+      <body>
+        <PageTransition>{children}</PageTransition>
+      </body>
     </html>
   );
 }

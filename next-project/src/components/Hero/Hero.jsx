@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { Fraunces, Space_Mono } from "next/font/google";
 import gsap from "gsap";
+import TransitionLink from "../TransitionLink"; 
 
 /**
  * Hero — v10
@@ -658,13 +659,13 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           ZARRAR
         </Link>
         <nav className="hero__links" aria-label="Primary">
-          <Link
-            href="#services"
-            className="hero__link hero__link--outline"
-            ref={(el) => (navLinksRef.current[0] = el)}
-          >
-            Services
-          </Link>
+       <TransitionLink
+  href="/services"
+  className="hero__link hero__link--outline"
+  ref={(el) => (navLinksRef.current[0] = el)}
+>
+  Services
+</TransitionLink>
           <Link
             href="#contact"
             className="hero__link hero__link--solid"
