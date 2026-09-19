@@ -7,6 +7,7 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import Link from "next/link";
 import { Fraunces, Space_Mono } from "next/font/google";
@@ -14,32 +15,37 @@ import gsap from "gsap";
 import TransitionLink from "../TransitionLink"; 
 
 /**
- * Hero — v10
+ * Hero — v11
  *
- * What changed vs v9:
- *  - The nav's hamburger menu button is gone. In its place: two direct
- *    links, "Services" and "Contact", styled as small stamp-blocks —
- *    the exact same solid/outline invert-on-hover device the headline
- *    already uses for its two boxed words (see .scramble-word--boxed
- *    below). This reuses an existing motif instead of introducing a
- *    new one: "Services" gets the outline treatment, "Contact" (the
- *    one action worth making bold) gets the solid fill. Both invert on
- *    hover exactly like the headline blocks and the old menu button
- *    did, so the interaction language doesn't change, only what's
- *    being pointed at.
- *  - navMenuRef is gone; navLinksRef (an array ref, same pattern as
- *    pupilRefs) now feeds the entrance timeline and the magnetic-pull
- *    effect, so both nav links settle in and get the same cursor-pull
- *    the mark always had — nothing about those effects changed besides
- *    what they target.
- *  - No layout logic changed. .hero keeps its own overflow:hidden and
- *    box-sizing:border-box, so this component was already containing
- *    its own content before this edit and still does after it.
+ * What changed vs v10 (nav-only edit — see the v10 note below for
+ * everything else, which is untouched):
+ *  - "Contact" is gone from the nav. In its place: "Build For Me", a
+ *    hover-opened dropdown styled after an awarded-site menu pattern
+ *    (numbered rows, serif label, arrow-in on row hover) — reference:
+ *    a full-screen agency menu where hovering a top-level item slides
+ *    out a list of sub-options beside it. Scaled down here into a
+ *    small panel anchored under the nav instead of a full-screen
+ *    takeover, since only the nav was in scope for this pass.
+ *  - The dropdown's five rows (Speakers / Real Estate / Authors /
+ *    Coaches / Entrepreneurs) fade+lift in with a GSAP stagger built
+ *    once and played/reversed on open/close — same "build a paused
+ *    timeline, play() / reverse() it" approach the rest of this file
+ *    already uses (see the pupil quickTo / magnetic-pull effects), so
+ *    this doesn't introduce a new animation pattern to the codebase.
+ *  - navLinksRef still holds exactly two elements (Services, then the
+ *    new dropdown trigger) — same shape as v10's [Services, Contact],
+ *    so the existing entrance timeline and magnetic-pull effect below
+ *    needed zero changes; they just animate whatever's in the array.
+ *  - .hero__nav's z-index went from 1 to 20 so the dropdown panel
+ *    (which lives inside the nav's own stacking context) always
+ *    renders above .hero__stage's content instead of being covered by
+ *    it — those two elements previously shared z-index:1, which is
+ *    fine with no popover but wasn't going to stay fine with one.
  *
- * (v9's changes are unchanged and still apply: black-and-white
- * palette, the two-typeface headline with hover-scramble decode,
- * cursor-tracking eyes, the vertical edge label, and the faint paper
- * grain layer.)
+ * (v10's own note, still true: nothing about layout logic changed —
+ * .hero keeps its own overflow:hidden and box-sizing:border-box, so
+ * this component was already containing its own content and still
+ * does.)
  *
  * What did NOT change: ScrambleHeadline's width-lock-after-fonts-ready
  * and text-content-keyed setup effect are the fix for a real bug (see
@@ -78,6 +84,18 @@ const SUB_COPY =
 // why. Never inline this array literal directly into <ScrambleHeadline lines={...}/>.
 const HEADLINE_LINES = ["Interfaces worth staying on.", "Inboxes worth opening."];
 
+// Stable reference for the same reason as HEADLINE_LINES above — this
+// feeds the dropdown's GSAP stagger via dropdownItemsRef, and a fresh
+// array literal on every render would be a footgun there too even
+// though nothing here currently re-keys off it by identity.
+const BUILD_FOR_OPTIONS = [
+  { label: "For Speakers", href: "/speakers" },
+  { label: "For Real Estate", href: "/real-estate" },
+  { label: "For Authors / Writers", href: "/authors" },
+  { label: "For Coaches", href: "/coaches" },
+  { label: "For Entrepreneurs / CEOs", href: "/entrepreneurs" },
+];
+
 const Hero = forwardRef(function Hero({ revealed = true }, ref) {
   const navMarkRef = useRef(null);
   const navLinksRef = useRef([]);
@@ -86,6 +104,17 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
   const eyesRef = useRef(null);
   const pupilRefs = useRef([]);
   const edgeTagRef = useRef(null);
+
+  // Build-For-Me dropdown — open state drives aria-expanded (for the
+  // icon rotation + screen readers); the actual show/hide animation
+  // runs off dropdownTlRef, not off React re-renders, so toggling this
+  // never causes a layout thrash.
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownWrapRef = useRef(null);
+  const dropdownPanelRef = useRef(null);
+  const dropdownItemsRef = useRef([]);
+  const dropdownTlRef = useRef(null);
+  const closeTimerRef = useRef(null);
 
   // Hide nav + eyes + edge label + headline + sub-copy words up front
   // *only* if we're going to be revealed later (i.e. a Preloader
@@ -309,6 +338,110 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
     return () => cleanups.forEach((fn) => fn());
   }, []);
 
+  // Build-For-Me dropdown entrance — a paused timeline built once
+  // (panel scales/fades in from its top-right corner, rows fade+lift
+  // in after it with a short stagger), then played forward on open and
+  // reversed on close. useLayoutEffect (not useEffect) so the panel is
+  // already hidden via GSAP before first paint — the CSS
+  // `visibility: hidden` on .hero__dropdown-panel is only the
+  // pre-hydration fallback for that same instant.
+  useLayoutEffect(() => {
+    const panel = dropdownPanelRef.current;
+    const items = dropdownItemsRef.current;
+    if (!panel) return;
+
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+    gsap.set(panel, {
+      autoAlpha: 0,
+      y: -10,
+      scale: 0.96,
+      transformOrigin: "top right",
+    });
+    gsap.set(items, { autoAlpha: 0, y: -8 });
+
+    const tl = gsap.timeline({
+      paused: true,
+      defaults: { ease: "power3.out" },
+    });
+    tl.to(
+      panel,
+      { autoAlpha: 1, y: 0, scale: 1, duration: reduceMotion ? 0.01 : 0.35 },
+      0
+    );
+    tl.to(
+      items,
+      {
+        autoAlpha: 1,
+        y: 0,
+        duration: reduceMotion ? 0.01 : 0.4,
+        stagger: reduceMotion ? 0 : 0.045,
+      },
+      reduceMotion ? 0 : 0.08
+    );
+
+    dropdownTlRef.current = tl;
+    return () => tl.kill();
+  }, []);
+
+  const openDropdown = () => {
+    clearTimeout(closeTimerRef.current);
+    setDropdownOpen(true);
+    dropdownTlRef.current?.play();
+  };
+
+  // Small grace period before closing on mouseleave, so moving the
+  // cursor diagonally from the trigger down into the panel doesn't
+  // clip the gap between them and close it prematurely.
+  const scheduleCloseDropdown = () => {
+    clearTimeout(closeTimerRef.current);
+    closeTimerRef.current = setTimeout(() => {
+      setDropdownOpen(false);
+      dropdownTlRef.current?.reverse();
+    }, 160);
+  };
+
+  const closeDropdown = () => {
+    clearTimeout(closeTimerRef.current);
+    setDropdownOpen(false);
+    dropdownTlRef.current?.reverse();
+  };
+
+  const toggleDropdown = () => {
+    if (dropdownOpen) closeDropdown();
+    else openDropdown();
+  };
+
+  // Escape closes it from anywhere; clicking outside the dropdown
+  // (trigger + panel) closes it too. Only wired up while open, so
+  // there's no idle document-level listener the rest of the time.
+  useEffect(() => {
+    if (!dropdownOpen) return;
+
+    const onKey = (e) => {
+      if (e.key === "Escape") closeDropdown();
+    };
+    const onClickOutside = (e) => {
+      if (
+        dropdownWrapRef.current &&
+        !dropdownWrapRef.current.contains(e.target)
+      ) {
+        closeDropdown();
+      }
+    };
+
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("mousedown", onClickOutside);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("mousedown", onClickOutside);
+    };
+  }, [dropdownOpen]);
+
+  useEffect(() => () => clearTimeout(closeTimerRef.current), []);
+
   return (
     <section className={`hero ${displayFont.variable} ${stampFont.variable}`} ref={ref}>
       <style>{`
@@ -364,7 +497,11 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
         /* Nav */
         .hero__nav {
           position: relative;
-          z-index: 1;
+          /* Raised from 1 → 20: this stacking context now needs to sit
+             above .hero__stage (also z-index:1 below), because the
+             Build-For-Me dropdown panel lives inside it and must not
+             be covered by the headline/stage content beneath it. */
+          z-index: 20;
           flex: 0 0 auto;
           display: flex;
           align-items: center;
@@ -382,9 +519,9 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           white-space: nowrap;
         }
 
-        /* Services / Contact — reuses the exact solid/outline invert
-           device the headline's boxed words already use (see
-           .scramble-word--boxed below), just at nav scale. Contact
+        /* Services / Build-For-Me — reuses the exact solid/outline
+           invert device the headline's boxed words already use (see
+           .scramble-word--boxed below), just at nav scale. Build-For-Me
            gets the solid fill since it's the one action worth making
            bold; Services stays outline. clamp() keeps both legible
            and non-wrapping down to narrow phones without needing a
@@ -441,6 +578,142 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           }
           .hero__links {
             gap: 6px;
+          }
+        }
+
+        /* Build-For-Me dropdown — same stamp-block trigger as Services,
+           opening a small numbered panel on hover (desktop) or tap
+           (touch/keyboard). Styled after an awarded agency-site menu:
+           faint index numerals, an italic serif label doing the actual
+           talking, and an arrow that slides in only on the row being
+           hovered — so the panel itself stays quiet until you commit
+           to a row. Entrance/exit is handled entirely by the GSAP
+           timeline built in the useLayoutEffect above; every rule here
+           is just the resting state plus per-row hover treatment. */
+        .hero__dropdown {
+          position: relative;
+        }
+        .hero__dropdown-trigger {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.55em;
+          cursor: pointer;
+          border: none;
+          font: inherit;
+        }
+        .hero__dropdown-icon {
+          position: relative;
+          width: 9px;
+          height: 9px;
+          flex: 0 0 auto;
+        }
+        .hero__dropdown-icon span {
+          position: absolute;
+          inset: 0;
+          margin: auto;
+          background: currentColor;
+          transition: transform 0.3s ease, opacity 0.3s ease;
+        }
+        .hero__dropdown-icon span:first-child {
+          width: 9px;
+          height: 1.5px;
+        }
+        .hero__dropdown-icon span:last-child {
+          width: 1.5px;
+          height: 9px;
+        }
+        /* plus → minus: the vertical stroke folds away when open,
+           echoing the reference menu's own open/close glyph swap */
+        .hero__dropdown-trigger[aria-expanded="true"] .hero__dropdown-icon span:last-child {
+          transform: rotate(90deg);
+          opacity: 0;
+        }
+
+        .hero__dropdown-panel {
+          position: absolute;
+          z-index: 5;
+          top: calc(100% + 14px);
+          right: 0;
+          width: min(320px, 82vw);
+          padding: 8px;
+          background: var(--paper);
+          border-radius: 14px;
+          border: 1.5px solid var(--ink);
+          box-shadow: 0 24px 48px -20px rgba(11, 11, 12, 0.35);
+          /* pre-hydration fallback only — the GSAP autoAlpha set in
+             the useLayoutEffect above takes over the instant JS runs,
+             this just stops a flash of a fully visible panel before it does */
+          visibility: hidden;
+        }
+        .hero__dropdown-list {
+          list-style: none;
+          margin: 0;
+          padding: 0;
+        }
+        .hero__dropdown-item + .hero__dropdown-item {
+          border-top: 1px solid var(--line);
+        }
+        .hero__dropdown-item a {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 12px 10px;
+          border-radius: 8px;
+          text-decoration: none;
+          color: var(--ink);
+          transition: background 0.2s ease, color 0.2s ease,
+            padding-left 0.25s ease;
+        }
+        .hero__dropdown-item a:hover,
+        .hero__dropdown-item a:focus-visible {
+          background: var(--ink);
+          color: var(--paper);
+          padding-left: 16px;
+        }
+        .hero__dropdown-index {
+          font-family: var(--font-stamp);
+          font-size: 0.66rem;
+          letter-spacing: 0.04em;
+          color: var(--ink-soft);
+          transition: color 0.2s ease, opacity 0.2s ease;
+        }
+        .hero__dropdown-item a:hover .hero__dropdown-index,
+        .hero__dropdown-item a:focus-visible .hero__dropdown-index {
+          color: var(--paper);
+          opacity: 0.7;
+        }
+        .hero__dropdown-label {
+          flex: 1 1 auto;
+          font-family: var(--font-display);
+          font-style: italic;
+          font-weight: 500;
+          font-size: 0.98rem;
+          letter-spacing: -0.01em;
+        }
+        .hero__dropdown-arrow {
+          font-family: var(--font-stamp);
+          font-size: 0.85rem;
+          opacity: 0;
+          transform: translateX(-6px);
+          transition: opacity 0.22s ease, transform 0.22s ease;
+        }
+        .hero__dropdown-item a:hover .hero__dropdown-arrow,
+        .hero__dropdown-item a:focus-visible .hero__dropdown-arrow {
+          opacity: 1;
+          transform: translateX(0);
+        }
+        @media (max-width: 520px) {
+          .hero__dropdown-panel {
+            right: -12px;
+            width: min(280px, 78vw);
+          }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .hero__dropdown-icon span,
+          .hero__dropdown-item a,
+          .hero__dropdown-index,
+          .hero__dropdown-arrow {
+            transition: none;
           }
         }
 
@@ -659,20 +932,57 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           ZARRAR
         </Link>
         <nav className="hero__links" aria-label="Primary">
-       <TransitionLink
-  href="/services"
-  className="hero__link hero__link--outline"
-  ref={(el) => (navLinksRef.current[0] = el)}
->
-  Services
-</TransitionLink>
-          <Link
-            href="#contact"
-            className="hero__link hero__link--solid"
-            ref={(el) => (navLinksRef.current[1] = el)}
+          <TransitionLink
+            href="/services"
+            className="hero__link hero__link--outline"
+            ref={(el) => (navLinksRef.current[0] = el)}
           >
-            Contact
-          </Link>
+            Services
+          </TransitionLink>
+
+          <div
+            className="hero__dropdown"
+            ref={dropdownWrapRef}
+            onMouseEnter={openDropdown}
+            onMouseLeave={scheduleCloseDropdown}
+          >
+            <button
+              type="button"
+              className="hero__link hero__link--solid hero__dropdown-trigger"
+              ref={(el) => (navLinksRef.current[1] = el)}
+              aria-haspopup="true"
+              aria-expanded={dropdownOpen}
+              onClick={toggleDropdown}
+            >
+              Build For Me
+              <span className="hero__dropdown-icon" aria-hidden="true">
+                <span />
+                <span />
+              </span>
+            </button>
+
+            <div className="hero__dropdown-panel" ref={dropdownPanelRef}>
+              <ul className="hero__dropdown-list">
+                {BUILD_FOR_OPTIONS.map((opt, i) => (
+                  <li
+                    key={opt.href}
+                    className="hero__dropdown-item"
+                    ref={(el) => (dropdownItemsRef.current[i] = el)}
+                  >
+                    <TransitionLink href={opt.href} onClick={closeDropdown}>
+                      <span className="hero__dropdown-index">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                      <span className="hero__dropdown-label">{opt.label}</span>
+                      <span className="hero__dropdown-arrow" aria-hidden="true">
+                        →
+                      </span>
+                    </TransitionLink>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
         </nav>
       </header>
 
