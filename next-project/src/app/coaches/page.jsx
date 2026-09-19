@@ -34,7 +34,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { SplitText } from "gsap/SplitText";
-import "./Coaches.css";
+import "./coaches.css";
 
 gsap.registerPlugin(ScrollTrigger, SplitText);
 
