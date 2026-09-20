@@ -1,9 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=Inter+Tight:wght@400;500;600&display=swap');
-
 /* =========================================================
    Zarrar — /for-speakers
-   Same design tokens as the other persona pages, plus a proof
-   strip and topics grid unique to this one.
+   Fonts come from next/font in page.js, which sets the
+   --font-archivo and --font-inter-tight variables on a wrapper.
    ========================================================= */
 
 .speakers-page {
@@ -19,14 +17,29 @@
   --block: clamp(4rem, 11vw, 9.5rem);
   --maxw: 1280px;
 
+  /* Left/right inset of the centred content column. Full-width bars (the nav)
+     use it so their logo and button line up with the hero and sections at
+     every viewport width, including anything wider than --maxw. */
+  --edge: max(var(--gut), calc((100% - var(--maxw)) / 2 + var(--gut)));
+
+  /* font stacks fall back to system fonts if the variables aren't present */
+  --f-display: var(--font-archivo, 'Archivo'), 'Arial Black', 'Helvetica Neue', Arial, sans-serif;
+  --f-body: var(--font-inter-tight, 'Inter Tight'), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
   background: var(--bone);
   color: var(--ink);
-  font-family: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--f-body);
   font-size: clamp(1rem, 0.96rem + 0.2vw, 1.08rem);
   line-height: 1.55;
-  overflow-x: clip;
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
+
+/* overflow-x lives on <main>, not the page root: on the root it becomes
+   the sticky nav's containing block and breaks position: sticky */
+.speakers-page > main { overflow-x: clip; }
+.speakers-page > main:focus { outline: none; }
 
 .speakers-page *,
 .speakers-page *::before,
@@ -37,6 +50,27 @@
 .speakers-page h3,
 .speakers-page p,
 .speakers-page li { overflow-wrap: break-word; }
+
+/* nicer line breaks: no one-word last lines, balanced headings */
+.speakers-page p,
+.speakers-page li { text-wrap: pretty; }
+.section-head h2,
+.closing h2,
+.faq-q span:first-child { text-wrap: balance; }
+
+/* ---------- Smooth in-page scrolling (scoped to this page) ---------- */
+
+/* native fallback when Lenis isn't running; padding keeps targets clear of the sticky nav */
+html:has(.speakers-page) {
+  scroll-behavior: smooth;
+  scroll-padding-top: 4rem;
+}
+
+/* Lenis owns scrolling when active; native smooth would fight it */
+html.lenis,
+html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
 
 /* ---------- Split-text primitives ---------- */
 
@@ -58,13 +92,14 @@
 .plan-name,
 .closing h2,
 .logo {
-  font-family: 'Archivo', sans-serif;
+  font-family: var(--f-display);
   font-weight: 900;
   text-transform: uppercase;
   margin: 0;
 }
 
-.hero-heading,
+/* 3D transform context is only needed by the section headings that use
+   the char flip. The hero heading is intentionally NOT in this list. */
 .section-head h2,
 .topic-card h3,
 .service-card h3,
@@ -78,7 +113,6 @@
 .hero,
 .section-head,
 .topics-grid,
-.topics-note,
 .services-grid,
 .case-steps,
 .case-note,
@@ -88,6 +122,24 @@
   margin-inline: auto;
   padding-inline: var(--gut);
 }
+
+/* ---------- Skip link ---------- */
+
+.skip-link {
+  position: fixed;
+  top: -5rem;
+  left: var(--edge);
+  z-index: 40;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.7rem 1.2rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: top 0.2s ease;
+}
+.skip-link:focus-visible { top: 0.75rem; }
 
 /* ---------- Buttons ---------- */
 
@@ -101,6 +153,7 @@
   font-weight: 600;
   font-size: 0.92rem;
   padding: 0.75rem 1.7rem;
+  text-align: center;
   transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
 }
 
@@ -130,14 +183,15 @@
   align-items: center;
   justify-content: space-between;
   gap: clamp(0.5rem, 2vw, 1rem);
-  padding: 0.85rem var(--gut);
+  padding: 0.75rem var(--edge);
   background: color-mix(in srgb, var(--bone) 88%, transparent);
+  -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
 }
 
 .logo {
   font-variation-settings: 'wdth' 88, 'wght' 900;
-  font-size: 1rem;
+  font-size: 1.05rem;
   letter-spacing: -0.035em;
   color: var(--ink);
   text-decoration: none;
@@ -151,14 +205,16 @@
   color: var(--ink);
   text-decoration: none;
   font-weight: 500;
-  font-size: clamp(0.8rem, 0.75rem + 0.25vw, 0.93rem);
-  padding-bottom: 2px;
+  font-size: clamp(0.78rem, 0.72rem + 0.25vw, 0.9rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding-block: 0.4rem;
   white-space: nowrap;
 }
 .nav-links a::after {
   content: '';
   position: absolute;
-  inset: auto 0 0 0;
+  inset: auto 0 0.15rem 0;
   height: 2px;
   background: var(--violet);
   transform: scaleX(0);
@@ -168,7 +224,12 @@
 .nav-links a:hover::after,
 .nav-links a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
 
+.nav-end { display: flex; align-items: center; gap: 0.5rem; flex: none; }
+
 .nav-cta {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
   background: var(--ink);
   color: var(--bone);
   padding: 0.55rem 1.2rem;
@@ -177,10 +238,38 @@
   font-weight: 600;
   font-size: 0.85rem;
   white-space: nowrap;
-  flex: none;
   transition: background 0.35s ease;
 }
 .nav-cta:hover, .nav-cta:focus-visible { background: var(--violet); }
+
+/* burger: only exists on small screens */
+.nav-toggle {
+  display: none;
+  position: relative;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+}
+.nav-toggle span {
+  position: absolute;
+  top: calc(50% - 1px);
+  left: 50%;
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.nav-toggle span:first-child { transform: translate(-50%, -4px); }
+.nav-toggle span:last-child { transform: translate(-50%, 4px); }
+.nav-toggle[aria-expanded='true'] span:first-child { transform: translate(-50%, 0) rotate(45deg); }
+.nav-toggle[aria-expanded='true'] span:last-child { transform: translate(-50%, 0) rotate(-45deg); }
+.nav-toggle:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
 
 .nav-progress {
   position: absolute;
@@ -196,22 +285,70 @@
   transform-origin: left;
 }
 
-@media (max-width: 559px) { .nav-links { display: none; } }
+/* below 720px the links become a dropdown under the bar */
+@media (max-width: 719px) {
+  .nav-toggle { display: inline-flex; }
+
+  .nav-links {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 0;
+    padding: 0.25rem var(--edge) 1rem;
+    background: var(--bone);
+    border-bottom: 1px solid var(--rule);
+    visibility: hidden;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
+  }
+  .nav-links.is-open {
+    visibility: visible;
+    opacity: 1;
+    transform: none;
+    transition-delay: 0s;
+  }
+
+  .nav-links a {
+    font-size: 1.05rem;
+    padding-block: 0.95rem;
+    border-bottom: 1px solid var(--rule);
+  }
+  .nav-links a:last-child { border-bottom: 0; }
+  .nav-links a::after { display: none; }
+}
 
 /* ---------- Hero ---------- */
 
-.hero { padding-block: clamp(3rem, 10vw, 7rem) clamp(2.5rem, 6vw, 4rem); }
+.hero { padding-block: clamp(2.5rem, 8vw, 6rem) clamp(2.5rem, 6vw, 4rem); }
 
+.hero-eyebrow {
+  margin: 0 0 clamp(1rem, 2.4vw, 1.6rem);
+  color: var(--violet);
+  font-weight: 600;
+  font-size: clamp(0.9rem, 0.86rem + 0.2vw, 1rem);
+}
+
+/* Four fixed lines. Content width is about 90vw (up to 1280px) and the
+   longest line ("Chase fewer") measures roughly 8.3em, so 9.4vw always fits.
+   The svh cap keeps the whole hero, buttons included, on a short laptop
+   screen instead of letting four giant lines push everything below the fold. */
 .hero-heading {
   font-variation-settings: 'wdth' 114, 'wght' 900;
-  font-size: clamp(2.6rem, 12vw, 9.5rem);
-  line-height: 0.84;
+  font-size: clamp(1.75rem, 9.4vw, 8rem);
+  font-size: clamp(1.75rem, min(9.4vw, 15svh), 8rem);
+  line-height: 0.88;
   letter-spacing: -0.05em;
+  /* optical alignment: big glyphs have side bearing, so pull the
+     heading left until its edge matches the eyebrow and body text */
+  margin-inline-start: -0.035em;
   margin-bottom: clamp(1.75rem, 4.5vw, 3rem);
 }
 
-.hero-heading span { display: block; }
-.hero-l2 { color: var(--violet); }
+.hero-line { display: block; }
+.hero-line--accent { color: var(--violet); }
 
 .hero-rule {
   height: 1px;
@@ -226,7 +363,7 @@
 
 @media (min-width: 880px) {
   .hero-foot {
-    grid-template-columns: minmax(0, 48ch) minmax(0, auto);
+    grid-template-columns: minmax(0, 52ch) minmax(0, auto);
     justify-content: space-between;
   }
 }
@@ -236,12 +373,17 @@
   font-size: clamp(1.05rem, 1rem + 0.4vw, 1.3rem);
   line-height: 1.45;
   color: var(--ink-soft);
-  max-width: 48ch;
+  max-width: 52ch;
 }
 
 .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 
-/* ---------- Proof strip ---------- */
+@media (max-width: 479px) {
+  /* thumb-friendly: primary action takes the full row */
+  .hero-actions .btn-solid { flex: 1 1 100%; }
+}
+
+/* ---------- Proof strip (renders only when AS_SEEN_AT has entries) ---------- */
 
 .proof { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
 
@@ -267,26 +409,18 @@
 .proof-badges { display: flex; flex-wrap: wrap; gap: 0.55rem; }
 
 .proof-badge {
-  font-family: 'Archivo', sans-serif;
+  font-family: var(--f-display);
   font-variation-settings: 'wdth' 90, 'wght' 700;
   text-transform: uppercase;
   letter-spacing: 0.02em;
   font-size: 0.8rem;
-  color: var(--ink-soft);
+  color: var(--ink);
   padding: 0.35rem 0.85rem;
-  border: 1px dashed var(--rule);
+  border: 1px solid var(--rule);
   border-radius: 6px;
 }
 
-.proof-note {
-  width: 100%;
-  margin: 0.35rem 0 0;
-  font-size: 0.8rem;
-  color: var(--ink-soft);
-  font-style: italic;
-}
-
-/* ---------- Section heads (shared by every section) ---------- */
+/* ---------- Section heads ---------- */
 
 .section-head { margin-bottom: clamp(2.25rem, 5.5vw, 3.75rem); }
 
@@ -302,15 +436,16 @@
   margin: 0;
   color: var(--ink-soft);
   font-size: clamp(1rem, 0.96rem + 0.25vw, 1.14rem);
-  max-width: 48ch;
+  max-width: 52ch;
 }
 
-/* ---------- Topics ---------- */
+/* ---------- Speaker page parts ---------- */
 
 .topics { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
 .topics-grid {
   list-style: none;
+  margin-block: 0;
   display: grid;
   gap: clamp(1rem, 2.4vw, 1.5rem);
   grid-template-columns: minmax(0, 1fr);
@@ -330,7 +465,7 @@
   padding: clamp(1.4rem, 2.6vw, 1.9rem);
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.6rem;
   transition: border-color 0.4s ease, transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -338,18 +473,9 @@
   .topic-card:hover { border-color: var(--ink); transform: translateY(-4px); }
 }
 
-.topic-eyebrow {
-  font-family: 'Archivo', sans-serif;
-  font-variation-settings: 'wdth' 92, 'wght' 800;
-  color: var(--violet);
-  font-size: 0.82rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 .topic-card h3 {
   font-variation-settings: 'wdth' 98, 'wght' 900;
-  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+  font-size: clamp(1.1rem, 1.9vw, 1.4rem);
   line-height: 1.05;
   letter-spacing: -0.03em;
 }
@@ -357,15 +483,8 @@
 .topic-card p {
   margin: 0;
   color: var(--ink-soft);
-  font-size: 0.95rem;
+  font-size: 0.97rem;
   line-height: 1.5;
-}
-
-.topics-note {
-  margin-top: clamp(1.25rem, 2.6vw, 1.75rem);
-  color: var(--ink-soft);
-  font-size: 0.85rem;
-  font-style: italic;
 }
 
 /* ---------- Services ---------- */
@@ -380,9 +499,12 @@
 
 @media (min-width: 620px) {
   .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  /* three cards in two columns: let the last one span instead of leaving a hole */
+  .services-grid > .service-card:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 @media (min-width: 900px) {
   .services-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .services-grid > .service-card:last-child:nth-child(odd) { grid-column: auto; }
 }
 
 .service-card {
@@ -422,12 +544,13 @@
 
 .service-card .btn { margin-top: 0.4rem; }
 
-/* ---------- Timeline (case study) ---------- */
+/* ---------- Timeline ---------- */
 
 .case-study { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
 .case-steps {
   list-style: none;
+  margin-block: 0;
   display: grid;
   gap: clamp(1rem, 2.4vw, 1.75rem);
   grid-template-columns: minmax(0, 1fr);
@@ -448,7 +571,7 @@
 }
 
 .case-step-num {
-  font-family: 'Archivo', sans-serif;
+  font-family: var(--f-display);
   font-variation-settings: 'wdth' 92, 'wght' 800;
   color: var(--violet);
   text-transform: uppercase;
@@ -471,8 +594,9 @@
 
 .case-note {
   margin-top: clamp(1.5rem, 3vw, 2rem);
+  margin-bottom: 0;
   color: var(--ink-soft);
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   font-style: italic;
 }
 
@@ -482,12 +606,14 @@
 
 .plans-grid {
   display: grid;
-  gap: clamp(1rem, 2.4vw, 1.75rem);
+  gap: clamp(1.4rem, 2.4vw, 1.75rem); /* a little extra room for the badge that overhangs a card */
   grid-template-columns: minmax(0, 1fr);
   align-items: stretch;
 }
 
-@media (min-width: 900px) {
+/* one column until there is genuinely room for three: at 900-960px the
+   cards were narrow enough to squeeze plan names and list items */
+@media (min-width: 960px) {
   .plans-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
@@ -504,16 +630,21 @@
 
 .plan.is-featured { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
+/* badge straddles the card's top border, so it can never collide with the
+   plan name at any width */
 .plan-flag {
   position: absolute;
-  top: clamp(1.15rem, 2.4vw, 1.9rem);
-  right: clamp(1.15rem, 2.4vw, 1.9rem);
+  top: 0;
+  right: clamp(1rem, 2.2vw, 1.6rem);
+  transform: translateY(-50%);
   background: var(--acid);
   color: var(--ink);
-  font-size: 0.71rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  padding: 0.3rem 0.7rem;
+  line-height: 1.4;
+  padding: 0.28rem 0.8rem;
   border-radius: 999px;
+  white-space: nowrap;
 }
 
 .plan-name {
@@ -521,9 +652,8 @@
   font-size: clamp(1.65rem, 3.2vw, 2.5rem);
   line-height: 0.95;
   letter-spacing: -0.035em;
+  white-space: nowrap;
 }
-
-.plan.is-featured .plan-name { padding-right: 7.5rem; }
 
 .plan-line { margin: 0; color: var(--violet); font-weight: 600; font-size: 0.99rem; }
 .plan.is-featured .plan-line { color: var(--acid); }
@@ -572,8 +702,11 @@
 .faq-item { border-top: 1px solid var(--rule); }
 .faq-item:last-child { border-bottom: 1px solid var(--rule); }
 
+.faq-heading { margin: 0; font: inherit; }
+
 .faq-q {
   width: 100%;
+  min-height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -613,7 +746,17 @@
 }
 .faq-item.is-open .faq-a { grid-template-rows: 1fr; }
 
-.faq-a-inner { overflow: hidden; }
+/* collapsed answers stay in the DOM (crawlable) but are hidden from AT */
+.faq-a-inner {
+  min-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 0.45s;
+}
+.faq-item.is-open .faq-a-inner {
+  visibility: visible;
+  transition-delay: 0s;
+}
 
 .faq-a p {
   margin: 0 0 clamp(1.1rem, 2.6vw, 1.5rem);
@@ -643,6 +786,10 @@
   max-width: 18ch;
 }
 
+@media (max-width: 479px) {
+  .closing .btn-lg { width: 100%; max-width: 26rem; padding-inline: 1.25rem; }
+}
+
 .closing-alt { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
 .closing-alt a { color: var(--violet); text-decoration: underline; text-underline-offset: 3px; }
 .closing-alt a:hover,
@@ -655,8 +802,14 @@
   outline-offset: 4px;
   border-radius: 3px;
 }
+.btn:focus-visible,
+.nav-cta:focus-visible { border-radius: 999px; }
+
+/* violet outline is too faint on the dark featured card */
+.plan.is-featured a:focus-visible { outline-color: var(--acid); }
 
 @media (prefers-reduced-motion: reduce) {
+  html:has(.speakers-page) { scroll-behavior: auto; }
   .speakers-page *,
   .speakers-page *::before,
   .speakers-page *::after {

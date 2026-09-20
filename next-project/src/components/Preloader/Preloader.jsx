@@ -11,78 +11,43 @@ import gsap from "gsap";
 import "./Preloader.css";
 
 /**
- * Preloader — v2 (+ scrollbar-gutter fix)
+ * Preloader — v2 (+ scrollbar-gutter fix, + font-gate fix)
  *
- * What changed vs the old version, and why:
+ * What it does:
  *
- * 1. THE SKELETON NOW MATCHES THE REAL PAGE.
- *    The old skeleton previewed a three-panel layout (email / browser /
- *    services blocks) that doesn't exist anymore — the current Hero is a
- *    single left-aligned column. Loading UI that foreshadows the wrong
- *    layout reads as a bug, not a preview. The stage below mirrors the
- *    real hero exactly (same padding, same block order: nav → headline
- *    x2 → sub x2 → CTA + link), positioned at the same coordinates as
- *    the real content so the wipe reads as "the sketch sharpens into the
- *    real thing" rather than two unrelated screens swapping.
+ * 1. The skeleton mirrors the real Hero layout (nav → headline x2 →
+ *    sub x2 → CTA + link) at the same coordinates, so the wipe reads as
+ *    "the sketch sharpens into the real thing".
  *
- * 2. REF-FORWARDING IS NO LONGER MANUAL.
- *    The old version required the parent to pass the *same* ref object
- *    both to <Preloader heroRef={...}> and to the child it renders
- *    inside — easy to get out of sync. This version clones `children`
- *    itself and attaches the ref for you. You can still pass an external
- *    heroRef if some other part of your app needs it too; it'll stay in
- *    sync automatically.
+ * 2. Ref-forwarding is automatic: this component clones `children` and
+ *    attaches the ref itself. You can still pass an external `heroRef`;
+ *    it stays in sync.
  *
- * 3. THE REVEAL HANDS OFF TO THE PAGE.
- *    At the moment the mask wipes away, Preloader now injects a
- *    `revealed` prop into the child. Your page component (see Hero.jsx)
- *    can use that to run one last, subtle settle-in on its own content —
- *    so the grow-back doesn't look like a static image scaling up, it
- *    looks like the page is arriving.
+ * 3. At the moment the mask wipes away, a `revealed` prop is injected
+ *    into the child so the page can run its own settle-in animation.
  *
- * 4. COUNTER + TIMING POLISH.
- *    - The "glitch" digit only re-rolls when the *integer* value changes
- *      (previously every animation frame — 60×/sec — which made it look
- *      like flicker/jank rather than an intentional effect).
- *    - A hairline progress bar reinforces the percentage without
- *      competing with it.
- *    - Shrink/grow now use expo easing instead of power3 for a snappier,
- *      more premium settle, and the dark dip gets a very faint grain
- *      texture instead of a flat fill (see Preloader.css).
- *    - Total runtime is ~10% tighter.
+ * 4. The counter only re-rolls its glitch symbol when the integer value
+ *    changes; a hairline progress bar reinforces the percentage; shrink /
+ *    grow use expo easing.
  *
- * 5. CLICKS ARE NOW BLOCKED CORRECTLY WHILE LOADING.
- *    The mask (not the outer panel) owns pointer-events, so the real
- *    page underneath can't be clicked while it's covered, but becomes
- *    interactive the instant the wipe finishes — not a beat later, when
- *    the whole outro timeline finally completes.
+ * 5. The mask (not the outer panel) owns pointer-events, so the page
+ *    underneath can't be clicked while covered, but becomes interactive
+ *    the instant the wipe finishes.
  *
- * 6. FONT-SWAP JOLT, FIXED.
- *    Space Grotesk loads via @import with font-display:swap, so the
- *    fallback font can still be showing when the intro starts. The
- *    timeline now waits for document.fonts.ready (capped at 800ms) before
- *    it starts counting, so if a swap happens it happens while the
- *    loading screen still covers everything — not mid-count or right
- *    after reveal. Hero.jsx's headline measurement got the matching fix
- *    (see its file header).
+ * 6. FONT GATE (fixed in this version): the timeline waits until the
+ *    font the counter is ACTUALLY using has loaded (capped at 800ms)
+ *    before it starts counting. The old gate used `document.fonts.ready`,
+ *    which resolves immediately when nothing has requested a font yet —
+ *    and at layout-effect time nothing has. Now we read the counter's
+ *    computed font-family and explicitly ask the browser to load it
+ *    (works with next/font's hashed family names too).
+ *    The CSS side of the font fix lives in Preloader.css (`--font`).
  *
- * 7. prefers-reduced-motion is respected: the whole sequence is skipped
- *    and the page is handed over instantly.
+ * 7. prefers-reduced-motion is respected: the sequence is skipped and the
+ *    page is handed over instantly.
  *
- * 8. SCROLLBAR-GUTTER RESERVATION — belt and suspenders (see Preloader.css).
- *    Reserving space for the scrollbar matters because while the intro
- *    plays, body scroll is locked (overflow: hidden) and the viewport is
- *    at its full, unconstrained width. The instant `finish()` flips
- *    overflow back to `auto`, the page's real (taller-than-viewport)
- *    content makes a scrollbar appear — narrowing the usable viewport
- *    width and firing a `resize` event, which is exactly the kind of
- *    event a layout bug could hook into and mis-handle. Reserving the
- *    gutter unconditionally, from the first stylesheet parse (in CSS,
- *    not toggled via JS at some later, timing-dependent moment), means
- *    the layout width is identical whether or not a scrollbar is
- *    actually drawn — nothing shifts and no resize fires when scroll
- *    unlocks. See Preloader.css for the actual mechanism (it no longer
- *    lives here as a JS side effect).
+ * 8. Scrollbar gutter is reserved in Preloader.css (plain CSS, not JS),
+ *    so unlocking scroll never shifts the layout or fires a resize.
  *
  * Props:
  *  - onDone: called once the whole intro has finished
@@ -327,18 +292,28 @@ export default function Preloader({ heroRef: externalHeroRef, onDone, children }
       );
     }
 
-    // Don't start counting until the page's webfont has actually
-    // loaded (capped at 800ms so a slow font never holds up the intro
-    // for long). Space Grotesk loads via @import with font-display:swap,
-    // so without this gate the fallback font can still be showing when
-    // the counter/label first paint, and the real font can swap in at
-    // any point afterwards — including mid-count or right after reveal,
-    // which reads as a jolt. Waiting here means the swap (if any) always
-    // happens while the loading screen is still covering the page.
-    const fontsReady =
-      document.fonts && document.fonts.ready
-        ? document.fonts.ready
-        : Promise.resolve();
+    // Don't start counting until the font the loading screen is
+    // ACTUALLY using has loaded (capped at 800ms so a slow font never
+    // holds up the intro for long).
+    //
+    // Why not just `document.fonts.ready`? Because it resolves right
+    // away if no font has been requested yet — and at layout-effect
+    // time the browser hasn't laid out the counter yet, so nothing has
+    // been requested. The gate would pass instantly and the real font
+    // could swap in mid-count.
+    //
+    // Instead we read the counter's computed font-family (this includes
+    // next/font's generated family name, if that's what's in use) and
+    // explicitly ask the browser to load exactly those faces: the
+    // counter's 600 weight and the label's 400 weight.
+    const fontsReady = (async () => {
+      if (!document.fonts || !document.fonts.load) return;
+      const family = getComputedStyle(counterText).fontFamily;
+      await Promise.all([
+        document.fonts.load(`600 1em ${family}`, "0123456789%"),
+        document.fonts.load(`400 1em ${family}`, "Loading"),
+      ]);
+    })().catch(() => {});
     const timeout = new Promise((resolve) => setTimeout(resolve, 800));
     Promise.race([fontsReady, timeout]).then(start);
 
@@ -370,7 +345,7 @@ export default function Preloader({ heroRef: externalHeroRef, onDone, children }
       <div className="preloader__panel" ref={panelRef}>
         <div className="preloader__mask" ref={maskRef}>
           <div className="stage" aria-hidden="true">
-            {/* mirrors Hero's real structure 1:1 — see file header */}
+            {/* mirrors Hero's real structure 1:1 */}
             <div className="sk-nav-row">
               <div
                 className="sk sk--nav"

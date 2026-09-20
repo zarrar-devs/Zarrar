@@ -3,30 +3,23 @@
 /* =============================================================
    Zarrar — /for-authors
    -------------------------------------------------------------
-   Sibling to /for-speakers, but a different room entirely: dark
-   "editor's desk" theme, Newsreader + IBM Plex Sans, chapters
-   instead of service cards, editions instead of plans. The proof
-   strip, genres and chapter copy are placeholder/example content
-   and MUST be swapped for the real author's own before this goes
-   live. Never list a real publication/press mention here unless
-   it's genuine.
+   Black-and-white "editor's desk" theme: white background, ink
+   type, Fraunces + Inter, chapters instead of service cards,
+   editions instead of plans. Three services only — web
+   development, lead generation + outreach, social media
+   management. The proof strip and genre list are placeholder /
+   example content and MUST be swapped for the real author's own
+   before this goes live. Never list a real publication/press
+   mention here unless it's genuine — fabricated review quotes
+   are a quick way to lose the exact press credibility this page
+   is trying to build.
 
-   SEO note: put this in the route's page.js / layout.js, not here
-   (metadata can't be exported from a "use client" file):
-
-   export const metadata = {
-     title: "Websites, Reader Growth & Press Outreach for Authors | Zarrar",
-     description:
-       "We build the author site that sells the book, run the email and social that keep readers coming back, and pitch you to the agents, press and podcasts covering your genre.",
-     alternates: { canonical: "https://zarrar.com/for-authors" },
-     openGraph: {
-       title: "You wrote the book. We build its audience. | Zarrar for Authors",
-       description:
-         "Websites, email marketing, social media management and press outreach for authors and writers.",
-       url: "https://zarrar.com/for-authors",
-       type: "website",
-     },
-   };
+   ⚠️ SEO: metadata (and the separate viewport export) CANNOT be
+   exported from a "use client" file. Put both into the route's
+   page.js / layout.js (server component). The full, up-to-date
+   object ships separately as authors-metadata.js — copy it in
+   as-is and just fill in the bracketed placeholders (domain, OG
+   image, social links).
    ============================================================= */
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -64,15 +57,6 @@ function OutreachIcon() {
     <svg viewBox="0 0 40 40" {...stroke}>
       <path className="draw" d="M5 20L34 8l-5 25-9-8-7 7v-9z" />
       <path className="draw" d="M15 23L34 8" />
-    </svg>
-  );
-}
-
-function MailIcon() {
-  return (
-    <svg viewBox="0 0 40 40" {...stroke}>
-      <rect className="draw" x="4" y="9" width="32" height="22" rx="2" />
-      <path className="draw" d="M5 11l15 12 15-12" />
     </svg>
   );
 }
@@ -121,32 +105,27 @@ const GENRES = [
   { title: "Nonfiction experts", line: "Turn a body of expertise into speaking, media and book deals." },
 ];
 
+/* Three services only: premium website development, lead
+   generation + outreach, and social media management. */
 const CHAPTERS = [
   {
     numeral: "I",
-    title: "Website & portfolio development",
-    body: "An author site built to sell the book — synopsis, reviews, buy links, events and a press kit, all in one polished, award-ready site.",
+    title: "Premium website development",
+    body: "A custom-built author site, not a template — synopsis, reviews, buy links, events and a press kit, designed and coded to sell the book and to rank for your name and your genre.",
     cta: "Build my site",
     icon: <BookIcon />,
   },
   {
     numeral: "II",
-    title: "Lead generation & cold outreach",
-    body: "We find the literary agents, podcast hosts, bookshops and press already covering your genre, and send the outreach that gets you featured.",
+    title: "Lead generation & outreach",
+    body: "We build the list of literary agents, podcast hosts, bookshops and press already covering your genre, then run the cold outreach and follow-up that turns that list into replies and bookings.",
     cta: "Get me covered",
     icon: <OutreachIcon />,
   },
   {
     numeral: "III",
-    title: "Email marketing",
-    body: "A reader newsletter that turns one-time buyers into people who pre-order the next book — written, designed and sent on schedule.",
-    cta: "Grow my list",
-    icon: <MailIcon />,
-  },
-  {
-    numeral: "IV",
     title: "Social media management",
-    body: "Content planned and posted from your writing, readings and reviews, so you stay visible in the gap between book launches.",
+    body: "Content planned and posted from your writing, readings and reviews, plus replies handled day to day — so you stay visible between book launches without doing the posting yourself.",
     cta: "Run my socials",
     icon: <SocialIcon />,
   },
@@ -156,40 +135,44 @@ const TIMELINE = [
   {
     when: "Weeks 1–2",
     title: "Foundation",
-    body: "Author site live with book pages, press kit and newsletter signup in place; an outreach list of agents, bookshops and press built.",
+    body: "Author website live with book pages, press kit and on-page SEO in place; an outreach list of agents, bookshops and press built.",
   },
   {
     when: "Weeks 3–6",
     title: "Outreach + content",
-    body: "Pitches to podcasts, bookshops and reviewers go out on schedule; the newsletter and social content start pulling from your backlist and reviews.",
+    body: "Pitches to podcasts, bookshops and reviewers go out on schedule; social content starts posting from your backlist, readings and reviews.",
   },
   {
     when: "Weeks 7–12",
     title: "Momentum",
-    body: "Press mentions and reader replies start layering on top of outreach, and the newsletter keeps selling the backlist on its own.",
+    body: "Press mentions and reader replies start layering on top of outreach, and the site keeps climbing in search while social keeps you visible.",
   },
 ];
 
 const FAQS = [
   {
-    q: "Do I need a website if my books are already listed on Amazon?",
-    a: "Amazon sells the book you already have. A site sells you — synopsis, reviews, backlist, press kit and a way to join your list — for the agents, press and readers deciding whether to follow your next one.",
+    q: "Do I need an author website if my books are already listed on Amazon?",
+    a: "Amazon sells the book you already have. A site sells you — synopsis, reviews, backlist, press kit and the SEO that gets you found — for the agents, press and readers deciding whether to follow your next one.",
   },
   {
-    q: "What should an author's website actually include?",
-    a: "Clear book pages with buy links and reviews, a short bio and photo press can use, a press kit, a way to join your newsletter, and enough SEO that people searching for a writer in your genre actually land on you.",
+    q: "What's actually included in a premium author website?",
+    a: "A custom design (not a template), book pages with buy links and reviews, a short bio and photo press can use, a press kit, and the on-page SEO — page titles, structured data, fast load times — that lets people searching for a writer in your genre actually land on you.",
   },
   {
-    q: "Can you get me press and podcast bookings, not just a nice site?",
-    a: "Yes — that's the outreach side. We find agents, program hosts, bookshops and reviewers already covering your genre and send the outreach and follow-up that gets you onto their list.",
+    q: "Will my author website actually show up in Google search?",
+    a: "Ranking takes ongoing work, not a one-time setup, but every site we build starts with clean semantic markup, fast performance, a proper sitemap and structured data for your books and bio, which is the technical foundation search engines need before content and links can do the rest.",
   },
   {
-    q: "Is email marketing worth it if I already post on social media?",
-    a: "Social reach can disappear overnight when a platform changes its algorithm. A newsletter is a list you own — it's what actually moves backlist copies and pre-orders when the next book is ready.",
+    q: "Can lead generation and outreach really get me agents, press and podcast bookings?",
+    a: "That's the point of the service — we research and build the list of agents, program hosts, bookshops and reviewers already covering your genre, then send the outreach and follow-up that gets you onto their calendar.",
+  },
+  {
+    q: "Do you actually manage my social media, or just tell me what to post?",
+    a: "We handle it day to day — planning the content calendar, writing and posting from your work and reviews, and responding to comments and messages, so it runs without needing your time.",
   },
   {
     q: "How long before I see results?",
-    a: "The site and newsletter are usually ready within the first couple of weeks. Outreach replies and press mentions typically start in the following weeks once campaigns are running — timing depends on your genre and the release calendar.",
+    a: "The website is usually ready within the first couple of weeks. Outreach replies and social growth typically build over the following weeks once campaigns are running — timing depends on your genre and release calendar.",
   },
 ];
 
@@ -200,36 +183,36 @@ const EDITIONS = [
     id: "paperback",
     name: "Paperback",
     line: "For getting found.",
-    body: "You've got the book, but no real home for it online. We build one.",
+    body: "You've got the book, but no real home for it online. We design and build one, SEO included.",
     includes: [
-      "Custom author website, designed and built from scratch",
+      "Premium author website, custom-designed and built from scratch",
       "Book pages with buy links, reviews and press kit",
-      "On-page SEO and Google Business setup",
+      "On-page SEO, structured data and Google Business setup",
       "Handover and training so you can edit it",
     ],
   },
   {
     id: "hardcover",
     name: "Hardcover",
-    line: "For looking established.",
-    body: "Everything in Paperback, plus the accounts that make you look like a working author, not a hobbyist.",
+    line: "For staying visible.",
+    body: "Everything in Paperback, plus a social media presence that runs without you.",
     includes: [
       "Everything in Paperback",
-      "Reader newsletter, designed and set up",
-      "Social media management, posting and replies",
+      "Social media management — content, posting and replies",
       "Custom email domain (you@yourname.com)",
+      "Quarterly SEO check-in as your backlist grows",
     ],
   },
   {
     id: "collectors",
     name: "Collector's Edition",
     line: "For selling more books.",
-    body: "The full engine. We build the presence, then go get the readers and the press.",
+    body: "The full engine. We build the presence, keep it visible, then go get the readers and the press.",
     includes: [
       "Everything in Hardcover",
-      "Cold outreach campaigns to agents, press and podcasts",
-      "Lead generation and booked interviews in your calendar",
-      "Ongoing email marketing calendar tied to your launches",
+      "Lead generation: a built list of agents, press and podcasts in your genre",
+      "Cold outreach campaigns and follow-up, run on your behalf",
+      "Booked interviews and pitches tracked in your calendar",
     ],
     featured: true,
   },
@@ -239,11 +222,14 @@ const EDITIONS = [
 const JSON_LD_SERVICE = {
   "@context": "https://schema.org",
   "@type": "ProfessionalService",
-  name: "Zarrar — Websites & Reader Growth for Authors",
+  "@id": "https://zarrar.com/for-authors#service",
+  name: "Zarrar — Websites, Lead Generation & Social Media for Authors",
   description:
-    "Website development, email marketing, social media management and press outreach for authors and writers.",
+    "Premium website development, lead generation and outreach, and social media management for authors and writers.",
+  url: "https://zarrar.com/for-authors",
   areaServed: "Worldwide",
   audience: { "@type": "Audience", audienceType: "Authors" },
+  provider: { "@type": "Organization", name: "Zarrar", url: "https://zarrar.com" },
   hasOfferCatalog: {
     "@type": "OfferCatalog",
     name: "Services",
@@ -269,15 +255,49 @@ const JSON_LD_FAQ = {
   })),
 };
 
+const JSON_LD_BREADCRUMB = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://zarrar.com/" },
+    { "@type": "ListItem", position: 2, name: "For Authors", item: "https://zarrar.com/for-authors" },
+  ],
+};
+
 /* ---------------- Component ---------------- */
 
 function Authors() {
   const root = useRef(null);
   const [openFAQ, setOpenFAQ] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  /* Close the mobile menu on Escape or an outside click, and lock
+     background scroll while it's open. */
+  useEffect(() => {
+    if (!menuOpen) {
+      document.body.style.overflow = "";
+      return;
+    }
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") setMenuOpen(false);
+    };
+    const onPointerDown = (e) => {
+      if (!e.target.closest(".nav")) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.body.style.overflow = "";
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+    };
+  }, [menuOpen]);
 
   useIsoLayoutEffect(() => {
     const splits = [];
     let lenis;
+    const node = root.current;
 
     const startSmooth = async () => {
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -292,6 +312,31 @@ function Authors() {
       }
     };
     startSmooth();
+
+    /* Same-page nav links (#genres, #chapters, ...) should glide
+       to their target instead of jumping — route the scroll
+       through Lenis when it's running so it stays in sync with
+       the rest of the page's scroll animation, and fall back to
+       native smooth scrolling otherwise. Also closes the mobile
+       menu after any in-page navigation. */
+    const handleAnchorClick = (e) => {
+      const link = e.target.closest('a[href^="#"]');
+      if (!link) return;
+      const hash = link.getAttribute("href");
+      if (!hash || hash === "#") return;
+      const target = document.querySelector(hash);
+      if (!target) return;
+      e.preventDefault();
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (lenis && !reduceMotion) {
+        lenis.scrollTo(target, { offset: -80, duration: 1.3 });
+      } else {
+        target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+      }
+      window.history.pushState(null, "", hash);
+      setMenuOpen(false);
+    };
+    node?.addEventListener("click", handleAnchorClick);
 
     const ctx = gsap.context((self) => {
       const q = self.selector;
@@ -391,7 +436,7 @@ function Authors() {
         /* ---- one orchestrated load sequence ---- */
         const shelf = q(".spine");
         gsap.timeline({ defaults: { ease: "expo.out" } })
-          .from(q(".logo, .nav-links a, .nav-cta"), {
+          .from(q(".logo, .nav-links a, .nav-cta, .nav-toggle"), {
             y: -18, opacity: 0, duration: 0.7, stagger: 0.05,
           })
           .add(inkIn(q(".hero-l1")[0]), 0.1)
@@ -495,6 +540,7 @@ function Authors() {
     }
 
     return () => {
+      node?.removeEventListener("click", handleAnchorClick);
       lenis?.destroy();
       splits.forEach((s) => s.revert());
       ctx.revert();
@@ -511,16 +557,38 @@ function Authors() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_FAQ) }}
       />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_BREADCRUMB) }}
+      />
 
       <header className="nav">
         <a className="logo" href="/">Zarrar</a>
-        <nav className="nav-links" aria-label="Sections">
+        <nav
+          className={`nav-links${menuOpen ? " is-open" : ""}`}
+          id="primary-navigation"
+          aria-label="Sections"
+        >
           <a href="#genres">Genres</a>
           <a href="#chapters">Services</a>
           <a href="#editions">Editions</a>
           <a href="#faq">FAQ</a>
         </nav>
-        <a className="nav-cta magnetic" href="#contact">Book a call</a>
+        <div className="nav-right">
+          <a className="nav-cta magnetic" href="#contact">Book a call</a>
+          <button
+            type="button"
+            className="nav-toggle"
+            aria-label={menuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={menuOpen}
+            aria-controls="primary-navigation"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            <span className="nav-toggle-bar" aria-hidden="true" />
+            <span className="nav-toggle-bar" aria-hidden="true" />
+            <span className="nav-toggle-bar" aria-hidden="true" />
+          </button>
+        </div>
         <div className="nav-progress" aria-hidden="true"><span /></div>
       </header>
 
@@ -532,9 +600,10 @@ function Authors() {
               <span className="hero-l2">We build its audience.</span>
             </h1>
             <p className="hero-sub">
-              An author site that sells the book on sight, outreach that lands
-              you agents, press and podcasts, and email and social that keep
-              readers coming back for the next one.
+              A premium author website that sells the book on sight, lead
+              generation and outreach that land you agents, press and
+              podcasts, and social media management that keeps readers
+              coming back for the next one.
             </p>
             <div className="hero-actions">
               <a className="btn btn-solid magnetic" href="#editions">See the editions</a>
@@ -588,7 +657,7 @@ function Authors() {
 
         <section className="chapters" id="chapters" aria-labelledby="chapters-title">
           <div className="section-head">
-            <h2 id="chapters-title">Four ways we get you read</h2>
+            <h2 id="chapters-title">Three ways we get you read</h2>
             <p>Pick one chapter, or run the whole book.</p>
           </div>
 
@@ -644,7 +713,7 @@ function Authors() {
                   {e.includes.map((item) => <li key={item}>{item}</li>)}
                 </ul>
                 <a
-                  className={`btn ${e.featured ? "btn-brass" : "btn-outline"}`}
+                  className={`btn ${e.featured ? "btn-invert" : "btn-outline"}`}
                   href="#contact"
                 >
                   Start with {e.name}

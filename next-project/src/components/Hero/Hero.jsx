@@ -10,7 +10,7 @@ import {
   useState,
 } from "react";
 import Link from "next/link";
-import { Fraunces, Space_Mono } from "next/font/google";
+import { Fraunces, Space_Mono, Space_Grotesk } from "next/font/google";
 import gsap from "gsap";
 import TransitionLink from "../TransitionLink"; 
 
@@ -74,6 +74,23 @@ const stampFont = Space_Mono({
   subsets: ["latin"],
   weight: ["700"],
   variable: "--font-mono-stamp",
+  display: "swap",
+});
+
+// Body sans for everything that isn't headline/stamp — the nav mark
+// (ZARRAR, bold) and the sub-copy paragraph. This was previously
+// missing entirely: `.hero`'s --font referenced var(--font-space-grotesk)
+// but nothing ever loaded that font or defined the variable, so the
+// whole `font-family: var(--font)` declaration was invalid at
+// compute-time and every element relying on it (the logo, the sub-copy)
+// silently fell back to the browser's default serif (Times New Roman) —
+// self-hosted via next/font like its siblings above: no extra request
+// beyond what the page already pays for the other two, and `display:
+// "swap"` keeps it from blocking first paint.
+const bodyFont = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-space-grotesk",
   display: "swap",
 });
 
@@ -443,7 +460,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
   useEffect(() => () => clearTimeout(closeTimerRef.current), []);
 
   return (
-    <section className={`hero ${displayFont.variable} ${stampFont.variable}`} ref={ref}>
+    <section className={`hero ${displayFont.variable} ${stampFont.variable} ${bodyFont.variable}`} ref={ref}>
       <style>{`
         .hero {
           --paper: #FFFFFF;

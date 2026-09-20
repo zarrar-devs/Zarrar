@@ -1,9 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..125,400..900&family=Inter+Tight:wght@400;500;600&display=swap');
-
 /* =========================================================
    Zarrar — /for-coaches
-   Same design tokens as Services.css, kept in sync on purpose
-   so every persona page looks like one site, not six.
+   - Every selector is scoped under .coaches-page, so it can't
+     collide with Hero.css / Services.css / other persona pages
+     (global CSS in the Next app router stays loaded after
+     client-side navigation).
+   - Fonts come from next/font in page.jsx (--font-archivo,
+     --font-inter-tight). No render-blocking @import.
+   - Same design tokens as before, so every persona page still
+     looks like one site.
    ========================================================= */
 
 .coaches-page {
@@ -15,17 +19,23 @@
   --paper: #fffdf7;
   --rule: rgba(16, 16, 16, 0.13);
 
+  --display: var(--font-archivo), 'Archivo', 'Arial Black', sans-serif;
+  --body: var(--font-inter-tight), 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+
   --gut: clamp(1.15rem, 5vw, 5rem);
   --block: clamp(4rem, 11vw, 9.5rem);
   --maxw: 1280px;
 
   background: var(--bone);
   color: var(--ink);
-  font-family: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: var(--body);
   font-size: clamp(1rem, 0.96rem + 0.2vw, 1.08rem);
   line-height: 1.55;
   overflow-x: clip;
   -webkit-font-smoothing: antialiased;
+
+  /* lets the FAQ height animate to `auto` (Chromium; others just snap) */
+  interpolate-size: allow-keywords;
 }
 
 .coaches-page *,
@@ -37,6 +47,13 @@
 .coaches-page h3,
 .coaches-page p,
 .coaches-page li { overflow-wrap: break-word; }
+
+/* Anchor jumps land below the sticky nav instead of under it */
+.coaches-page section[id] { scroll-margin-top: 4.5rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.coaches-page) { scroll-behavior: smooth; }
+}
 
 /* ---------- Split-text primitives ---------- */
 
@@ -50,39 +67,38 @@
 
 /* ---------- Display type ---------- */
 
-.hero-heading,
-.section-head h2,
-.service-card h3,
-.problem-item h3,
-.case-step h3,
-.plan-name,
-.closing h2,
-.logo {
-  font-family: 'Archivo', sans-serif;
+.coaches-page .hero-heading,
+.coaches-page .section-head h2,
+.coaches-page .service-card h3,
+.coaches-page .problem-item h3,
+.coaches-page .case-step h3,
+.coaches-page .plan-name,
+.coaches-page .closing h2,
+.coaches-page .logo {
+  font-family: var(--display);
   font-weight: 900;
   text-transform: uppercase;
   margin: 0;
 }
 
-.hero-heading,
-.section-head h2,
-.service-card h3,
-.problem-item h3,
-.case-step h3,
-.plan-name,
-.closing h2 { transform-style: preserve-3d; }
+.coaches-page .hero-heading,
+.coaches-page .section-head h2,
+.coaches-page .service-card h3,
+.coaches-page .problem-item h3,
+.coaches-page .case-step h3,
+.coaches-page .plan-name,
+.coaches-page .closing h2 { transform-style: preserve-3d; }
 
 /* ---------- Layout shells ---------- */
 
-.shell,
-.hero,
-.section-head,
-.problem-list,
-.services-grid,
-.case-steps,
-.case-note,
-.plans-grid,
-.faq-list {
+.coaches-page .hero,
+.coaches-page .section-head,
+.coaches-page .problem-list,
+.coaches-page .services-grid,
+.coaches-page .case-steps,
+.coaches-page .case-note,
+.coaches-page .plans-grid,
+.coaches-page .faq-list {
   max-width: var(--maxw);
   margin-inline: auto;
   padding-inline: var(--gut);
@@ -90,7 +106,7 @@
 
 /* ---------- Buttons ---------- */
 
-.btn {
+.coaches-page .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -103,25 +119,79 @@
   transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
 }
 
-.btn-solid { background: var(--ink); color: var(--paper); }
-.btn-solid:hover, .btn-solid:focus-visible { background: var(--violet); }
+.coaches-page .btn-solid { background: var(--ink); color: var(--paper); }
+.coaches-page .btn-solid:hover,
+.coaches-page .btn-solid:focus-visible { background: var(--violet); }
 
-.btn-outline { border: 1px solid var(--rule); color: var(--ink); background: transparent; }
-.btn-outline:hover, .btn-outline:focus-visible {
+.coaches-page .btn-outline { border: 1px solid var(--rule); color: var(--ink); background: transparent; }
+.coaches-page .btn-outline:hover,
+.coaches-page .btn-outline:focus-visible {
   background: var(--ink); color: var(--paper); border-color: var(--ink);
 }
 
-.btn-ghost { color: var(--ink-soft); padding-inline: 0.75rem; }
-.btn-ghost:hover, .btn-ghost:focus-visible { color: var(--violet); }
+.coaches-page .btn-ghost { color: var(--ink-soft); padding-inline: 0.75rem; }
+.coaches-page .btn-ghost:hover,
+.coaches-page .btn-ghost:focus-visible { color: var(--violet); }
 
-.btn-acid { background: var(--acid); color: var(--ink); }
-.btn-acid:hover, .btn-acid:focus-visible { background: var(--paper); }
+.coaches-page .btn-acid { background: var(--acid); color: var(--ink); }
+.coaches-page .btn-acid:hover,
+.coaches-page .btn-acid:focus-visible { background: var(--paper); }
 
-.btn-lg { font-size: 1rem; min-height: 54px; padding: 0.95rem 2.4rem; }
+.coaches-page .btn-lg { font-size: 1rem; min-height: 54px; padding: 0.95rem 2.4rem; }
+
+/* ---------- Skip link (a11y + Core Web Vitals-friendly focus order) ---------- */
+
+.coaches-page .skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 50;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 0.75rem 1.25rem;
+  border-radius: 0 0 8px 0;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.coaches-page .skip-link:focus { left: 0; }
+
+/* ---------- Breadcrumb ---------- */
+
+.coaches-page .breadcrumb {
+  max-width: var(--maxw);
+  margin-inline: auto;
+  padding: 0.85rem var(--gut) 0;
+}
+
+.coaches-page .breadcrumb ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.coaches-page .breadcrumb li { display: flex; align-items: center; }
+
+.coaches-page .breadcrumb li:not(:last-child)::after {
+  content: '/';
+  margin: 0 0.5rem;
+  color: var(--rule);
+}
+
+.coaches-page .breadcrumb a { color: var(--ink-soft); text-decoration: none; }
+.coaches-page .breadcrumb a:hover,
+.coaches-page .breadcrumb a:focus-visible { color: var(--violet); }
+
+.coaches-page .breadcrumb li[aria-current='page'] { color: var(--ink); font-weight: 600; }
 
 /* ---------- Nav ---------- */
 
-.nav {
+.coaches-page .nav {
   position: sticky;
   top: 0;
   z-index: 20;
@@ -134,7 +204,7 @@
   backdrop-filter: blur(10px);
 }
 
-.logo {
+.coaches-page .logo {
   font-variation-settings: 'wdth' 88, 'wght' 900;
   font-size: 1rem;
   letter-spacing: -0.035em;
@@ -143,9 +213,9 @@
   flex: none;
 }
 
-.nav-links { display: flex; gap: clamp(0.85rem, 2.4vw, 2rem); }
+.coaches-page .nav-links { display: flex; gap: clamp(0.85rem, 2.4vw, 2rem); }
 
-.nav-links a {
+.coaches-page .nav-links a {
   position: relative;
   color: var(--ink);
   text-decoration: none;
@@ -154,7 +224,7 @@
   padding-bottom: 2px;
   white-space: nowrap;
 }
-.nav-links a::after {
+.coaches-page .nav-links a::after {
   content: '';
   position: absolute;
   inset: auto 0 0 0;
@@ -164,10 +234,10 @@
   transform-origin: right;
   transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.nav-links a:hover::after,
-.nav-links a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+.coaches-page .nav-links a:hover::after,
+.coaches-page .nav-links a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
 
-.nav-cta {
+.coaches-page .nav-cta {
   background: var(--ink);
   color: var(--bone);
   padding: 0.55rem 1.2rem;
@@ -179,15 +249,16 @@
   flex: none;
   transition: background 0.35s ease;
 }
-.nav-cta:hover, .nav-cta:focus-visible { background: var(--violet); }
+.coaches-page .nav-cta:hover,
+.coaches-page .nav-cta:focus-visible { background: var(--violet); }
 
-.nav-progress {
+.coaches-page .nav-progress {
   position: absolute;
   inset: auto 0 0 0;
   height: 2px;
   background: var(--rule);
 }
-.nav-progress span {
+.coaches-page .nav-progress span {
   display: block;
   height: 100%;
   background: var(--violet);
@@ -195,13 +266,13 @@
   transform-origin: left;
 }
 
-@media (max-width: 559px) { .nav-links { display: none; } }
+@media (max-width: 559px) { .coaches-page .nav-links { display: none; } }
 
 /* ---------- Hero ---------- */
 
-.hero { padding-block: clamp(3rem, 10vw, 7rem) var(--block); }
+.coaches-page .hero { padding-block: clamp(3rem, 10vw, 7rem) var(--block); }
 
-.hero-heading {
+.coaches-page .hero-heading {
   font-variation-settings: 'wdth' 114, 'wght' 900;
   font-size: clamp(2.6rem, 11.5vw, 8.5rem);
   line-height: 0.85;
@@ -209,10 +280,10 @@
   margin-bottom: clamp(1.75rem, 4.5vw, 3rem);
 }
 
-.hero-heading span { display: block; }
-.hero-l2 { color: var(--violet); }
+.coaches-page .hero-heading span { display: block; }
+.coaches-page .hero-l2 { color: var(--violet); }
 
-.hero-rule {
+.coaches-page .hero-rule {
   height: 1px;
   background: var(--ink);
   opacity: 0.18;
@@ -221,16 +292,16 @@
   margin-bottom: clamp(1.4rem, 3.5vw, 2.25rem);
 }
 
-.hero-foot { display: grid; gap: clamp(1.6rem, 4vw, 3rem); align-items: start; }
+.coaches-page .hero-foot { display: grid; gap: clamp(1.6rem, 4vw, 3rem); align-items: start; }
 
 @media (min-width: 880px) {
-  .hero-foot {
+  .coaches-page .hero-foot {
     grid-template-columns: minmax(0, 48ch) minmax(0, auto);
     justify-content: space-between;
   }
 }
 
-.hero-sub {
+.coaches-page .hero-sub {
   margin: 0;
   font-size: clamp(1.05rem, 1rem + 0.4vw, 1.3rem);
   line-height: 1.45;
@@ -238,13 +309,13 @@
   max-width: 48ch;
 }
 
-.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.coaches-page .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
 
 /* ---------- Section heads (shared by every section) ---------- */
 
-.section-head { margin-bottom: clamp(2.25rem, 5.5vw, 3.75rem); }
+.coaches-page .section-head { margin-bottom: clamp(2.25rem, 5.5vw, 3.75rem); }
 
-.section-head h2 {
+.coaches-page .section-head h2 {
   font-variation-settings: 'wdth' 104, 'wght' 900;
   font-size: clamp(1.85rem, 5.4vw, 4rem);
   line-height: 0.92;
@@ -252,7 +323,7 @@
   margin-bottom: 0.6rem;
 }
 
-.section-head p {
+.coaches-page .section-head p {
   margin: 0;
   color: var(--ink-soft);
   font-size: clamp(1rem, 0.96rem + 0.25vw, 1.14rem);
@@ -261,24 +332,23 @@
 
 /* ---------- Problem (pain points) ---------- */
 
-.problem { border-top: 1px solid var(--rule); padding-block: var(--block); }
+.coaches-page .problem { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
-.problem-list { list-style: none; margin: 0; }
+.coaches-page .problem-list { list-style: none; margin-block: 0; }
 
-.problem-item {
+.coaches-page .problem-item {
   position: relative;
   padding: clamp(1.5rem, 3.2vw, 2.25rem) 0;
 }
-.problem-item + .problem-item { margin-top: 0; }
 
-.problem-rule {
+.coaches-page .problem-rule {
   position: absolute;
   inset: 0 0 auto 0;
   height: 1px;
   background: var(--rule);
   transform-origin: left center;
 }
-.problem-item:last-child::after {
+.coaches-page .problem-item:last-child::after {
   content: '';
   position: absolute;
   inset: auto 0 0 0;
@@ -286,29 +356,29 @@
   background: var(--rule);
 }
 
-.problem-head {
+.coaches-page .problem-head {
   display: flex;
   align-items: baseline;
   gap: 0.85rem;
   margin-bottom: 0.5rem;
 }
 
-.problem-num {
-  font-family: 'Archivo', sans-serif;
+.coaches-page .problem-num {
+  font-family: var(--display);
   font-variation-settings: 'wdth' 92, 'wght' 800;
   color: var(--violet);
   font-size: clamp(0.85rem, 0.8rem + 0.2vw, 1rem);
   flex: none;
 }
 
-.problem-item h3 {
+.coaches-page .problem-item h3 {
   font-variation-settings: 'wdth' 98, 'wght' 900;
   font-size: clamp(1.2rem, 2.8vw, 1.85rem);
   letter-spacing: -0.03em;
   line-height: 1.05;
 }
 
-.problem-item p {
+.coaches-page .problem-item p {
   margin: 0;
   color: var(--ink-soft);
   font-size: clamp(0.98rem, 0.95rem + 0.2vw, 1.1rem);
@@ -317,22 +387,25 @@
 
 /* ---------- Services ---------- */
 
-.services { border-top: 1px solid var(--rule); padding-block: var(--block); }
+/* Top padding tightened on purpose — this is the one gap that was too
+   big (problem → services). Bottom padding is untouched so the
+   services → case-study gap stays exactly as it was. */
+.coaches-page .services { border-top: 1px solid var(--rule); padding-top: clamp(2rem, 5vw, 4.5rem); padding-bottom: var(--block); }
 
-.services-grid {
+.coaches-page .services-grid {
   display: grid;
   gap: clamp(1rem, 2.4vw, 2rem);
   grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 620px) {
-  .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .coaches-page .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (min-width: 900px) {
-  .services-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .coaches-page .services-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.service-card {
+.coaches-page .service-card {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -345,13 +418,13 @@
 }
 
 @media (hover: hover) {
-  .service-card:hover { border-color: var(--ink); transform: translateY(-5px); }
+  .coaches-page .service-card:hover { border-color: var(--ink); transform: translateY(-5px); }
 }
 
-.service-icon { width: 44px; height: 44px; color: var(--violet); display: block; }
-.service-icon svg { width: 100%; height: 100%; overflow: visible; }
+.coaches-page .service-icon { width: 44px; height: 44px; color: var(--violet); display: block; }
+.coaches-page .service-icon svg { width: 100%; height: 100%; overflow: visible; }
 
-.service-card h3 {
+.coaches-page .service-card h3 {
   font-variation-settings: 'wdth' 98, 'wght' 900;
   font-size: clamp(1.2rem, 2vw, 1.55rem);
   line-height: 1;
@@ -359,7 +432,7 @@
   max-width: 15ch;
 }
 
-.service-card p {
+.coaches-page .service-card p {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.99rem;
@@ -367,13 +440,13 @@
   flex: 1;
 }
 
-.service-card .btn { margin-top: 0.4rem; }
+.coaches-page .service-card .btn { margin-top: 0.4rem; }
 
 /* ---------- Timeline (case study) ---------- */
 
-.case-study { border-top: 1px solid var(--rule); padding-block: var(--block); }
+.coaches-page .case-study { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
-.case-steps {
+.coaches-page .case-steps {
   list-style: none;
   display: grid;
   gap: clamp(1rem, 2.4vw, 1.75rem);
@@ -381,10 +454,10 @@
 }
 
 @media (min-width: 820px) {
-  .case-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .coaches-page .case-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.case-step {
+.coaches-page .case-step {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -394,8 +467,8 @@
   padding: clamp(1.5rem, 3vw, 2.1rem);
 }
 
-.case-step-num {
-  font-family: 'Archivo', sans-serif;
+.coaches-page .case-step-num {
+  font-family: var(--display);
   font-variation-settings: 'wdth' 92, 'wght' 800;
   color: var(--violet);
   text-transform: uppercase;
@@ -403,20 +476,20 @@
   font-size: 0.9rem;
 }
 
-.case-step h3 {
+.coaches-page .case-step h3 {
   font-variation-settings: 'wdth' 98, 'wght' 900;
   font-size: clamp(1.05rem, 1.8vw, 1.35rem);
   letter-spacing: -0.03em;
 }
 
-.case-step p {
+.coaches-page .case-step p {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.97rem;
   line-height: 1.5;
 }
 
-.case-note {
+.coaches-page .case-note {
   margin-top: clamp(1.5rem, 3vw, 2rem);
   color: var(--ink-soft);
   font-size: 0.86rem;
@@ -425,9 +498,9 @@
 
 /* ---------- Plans ---------- */
 
-.plans { border-top: 1px solid var(--rule); padding-block: var(--block); }
+.coaches-page .plans { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
-.plans-grid {
+.coaches-page .plans-grid {
   display: grid;
   gap: clamp(1rem, 2.4vw, 1.75rem);
   grid-template-columns: minmax(0, 1fr);
@@ -435,10 +508,10 @@
 }
 
 @media (min-width: 900px) {
-  .plans-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .coaches-page .plans-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.plan {
+.coaches-page .plan {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -449,9 +522,9 @@
   padding: clamp(1.6rem, 3vw, 2.5rem);
 }
 
-.plan.is-featured { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.coaches-page .plan.is-featured { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
-.plan-flag {
+.coaches-page .plan-flag {
   position: absolute;
   top: clamp(1.15rem, 2.4vw, 1.9rem);
   right: clamp(1.15rem, 2.4vw, 1.9rem);
@@ -463,40 +536,45 @@
   border-radius: 999px;
 }
 
-.plan-name {
+.coaches-page .plan-name {
   font-variation-settings: 'wdth' 100, 'wght' 900;
   font-size: clamp(1.65rem, 3.2vw, 2.5rem);
   line-height: 0.95;
   letter-spacing: -0.035em;
 }
 
-.plan.is-featured .plan-name { padding-right: 7.5rem; }
+/* The flag is absolutely positioned (out of flow — it never adds height
+   to the card). Instead of reserving a fixed-width gap beside it, which
+   is what broke on a longer plan name, the featured title just starts
+   below the flag and keeps the FULL card width — so it can't collide
+   with the flag no matter how long the name is. */
+.coaches-page .plan.is-featured .plan-name { margin-top: clamp(2.3rem, 4.4vw, 3.1rem); }
 
-.plan-line { margin: 0; color: var(--violet); font-weight: 600; font-size: 0.99rem; }
-.plan.is-featured .plan-line { color: var(--acid); }
+.coaches-page .plan-line { margin: 0; color: var(--violet); font-weight: 600; font-size: 0.99rem; }
+.coaches-page .plan.is-featured .plan-line { color: var(--acid); }
 
-.plan-body { margin: 0; color: var(--ink-soft); font-size: 0.98rem; }
-.plan.is-featured .plan-body { color: rgba(255, 253, 247, 0.72); }
+.coaches-page .plan-body { margin: 0; color: var(--ink-soft); font-size: 0.98rem; }
+.coaches-page .plan.is-featured .plan-body { color: rgba(255, 253, 247, 0.72); }
 
-.plan-includes {
+.coaches-page .plan-includes {
   list-style: none;
   margin: 0.5rem 0 1.4rem;
   padding: 0;
   border-top: 1px solid var(--rule);
   flex: 1;
 }
-.plan.is-featured .plan-includes { border-color: rgba(255, 253, 247, 0.18); }
+.coaches-page .plan.is-featured .plan-includes { border-color: rgba(255, 253, 247, 0.18); }
 
-.plan-includes li {
+.coaches-page .plan-includes li {
   position: relative;
   padding: 0.72rem 0 0.72rem 1.5rem;
   border-bottom: 1px solid var(--rule);
   font-size: 0.95rem;
   line-height: 1.45;
 }
-.plan.is-featured .plan-includes li { border-color: rgba(255, 253, 247, 0.18); }
+.coaches-page .plan.is-featured .plan-includes li { border-color: rgba(255, 253, 247, 0.18); }
 
-.plan-includes li::before {
+.coaches-page .plan-includes li::before {
   content: '';
   position: absolute;
   left: 0;
@@ -507,67 +585,72 @@
   border-radius: 1px;
   transform: rotate(45deg);
 }
-.plan.is-featured .plan-includes li::before { background: var(--acid); }
+.coaches-page .plan.is-featured .plan-includes li::before { background: var(--acid); }
 
-.plan .btn { align-self: stretch; }
-.plan.is-featured .btn-outline { border-color: rgba(255, 253, 247, 0.3); color: var(--paper); }
+.coaches-page .plan .btn { align-self: stretch; }
+.coaches-page .plan.is-featured .btn-outline { border-color: rgba(255, 253, 247, 0.3); color: var(--paper); }
 
-/* ---------- FAQ ---------- */
+/* ---------- FAQ (native <details name="faq">) ---------- */
 
-.faq { border-top: 1px solid var(--rule); padding-block: var(--block); }
+.coaches-page .faq { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
-.faq-item { border-top: 1px solid var(--rule); }
-.faq-item:last-child { border-bottom: 1px solid var(--rule); }
+.coaches-page .faq-item { border-top: 1px solid var(--rule); }
+.coaches-page .faq-item:last-child { border-bottom: 1px solid var(--rule); }
 
-.faq-q {
-  width: 100%;
+.coaches-page .faq-q {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1.25rem;
-  background: none;
-  border: none;
-  margin: 0;
-  text-align: left;
+  list-style: none;
   cursor: pointer;
-  font-family: inherit;
   color: var(--ink);
   padding: clamp(1.1rem, 2.6vw, 1.5rem) 0;
   font-weight: 600;
   font-size: clamp(1rem, 0.97rem + 0.25vw, 1.18rem);
 }
-.faq-q:focus-visible {
+.coaches-page .faq-q::-webkit-details-marker { display: none; }
+.coaches-page .faq-q:focus-visible {
   outline: 2px solid var(--violet);
   outline-offset: 4px;
   border-radius: 3px;
 }
 
-.faq-icon {
+/* the question is an <h3> for SEO; it must look like plain text */
+.coaches-page .faq-q h3 {
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+}
+
+.coaches-page .faq-icon {
   flex: none;
   width: 22px;
   height: 22px;
   color: var(--violet);
 }
-.faq-icon svg {
+.coaches-page .faq-icon svg {
   width: 100%;
   height: 100%;
+  fill: none;
   stroke: currentColor;
   stroke-width: 1.6;
   stroke-linecap: round;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.faq-item.is-open .faq-icon svg { transform: rotate(45deg); }
+.coaches-page .faq-item[open] .faq-icon svg { transform: rotate(45deg); }
 
-.faq-a {
-  display: grid;
-  grid-template-rows: 0fr;
-  transition: grid-template-rows 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+/* height animation where supported; elsewhere it simply toggles */
+.coaches-page .faq-item::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    content-visibility 0.45s allow-discrete;
 }
-.faq-item.is-open .faq-a { grid-template-rows: 1fr; }
+.coaches-page .faq-item[open]::details-content { block-size: auto; }
 
-.faq-a-inner { overflow: hidden; }
-
-.faq-a p {
+.coaches-page .faq-a p {
   margin: 0 0 clamp(1.1rem, 2.6vw, 1.5rem);
   color: var(--ink-soft);
   font-size: 0.99rem;
@@ -577,7 +660,7 @@
 
 /* ---------- Closing ---------- */
 
-.closing {
+.coaches-page .closing {
   border-top: 1px solid var(--rule);
   padding: var(--block) var(--gut);
   display: flex;
@@ -587,7 +670,7 @@
   text-align: center;
 }
 
-.closing h2 {
+.coaches-page .closing h2 {
   font-variation-settings: 'wdth' 106, 'wght' 900;
   font-size: clamp(1.9rem, 6vw, 4.6rem);
   line-height: 0.9;
@@ -595,18 +678,25 @@
   max-width: 18ch;
 }
 
-.closing-alt {
+.coaches-page .closing-sub {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: clamp(1rem, 0.96rem + 0.25vw, 1.14rem);
+  max-width: 44ch;
+}
+
+.coaches-page .closing-alt {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.95rem;
 }
-.closing-alt a {
+.coaches-page .closing-alt a {
   color: var(--violet);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.closing-alt a:hover,
-.closing-alt a:focus-visible { color: var(--ink); }
+.coaches-page .closing-alt a:hover,
+.coaches-page .closing-alt a:focus-visible { color: var(--ink); }
 
 /* ---------- Accessibility ---------- */
 
@@ -623,6 +713,7 @@
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
-  .hero-rule { transform: scaleX(1); }
-  .problem-rule { transform: scaleX(1); }
+  .coaches-page .faq-item::details-content { transition: none; }
+  .coaches-page .hero-rule,
+  .coaches-page .problem-rule { transform: scaleX(1); }
 }
