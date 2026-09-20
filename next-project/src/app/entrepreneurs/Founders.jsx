@@ -15,10 +15,22 @@
      starts on first paint and never flashes before hydration.
    - GSAP only handles what needs scroll or timing: the search
      demo, section headings, the stacking service sheets, the
-     timeline and the nav progress bar.
+     timeline and the nav (progress bar, scrolled state, active link).
    - Everything is visible by default; animation only ever hides
      things that are below the fold or that CSS controls.
    - prefers-reduced-motion gets the finished state.
+
+   Nav
+   - <header.fd-header> is the sticky wrapper. The gap around the
+     pill is PADDING, not margin: a margin on the first child of
+     .founders-page collapses through it and exposes the body
+     background as a white strip above the page.
+   - Below 900px the links move into a dropdown (.fd-menu) opened by
+     the hamburger button.
+   - `.fd-nav` has a STATIC className on purpose. GSAP toggles
+     `is-scrolled` on it directly; if React ever re-rendered a
+     different className it would wipe that class. Menu state lives
+     on the header as `data-open` instead.
 
    Every class is prefixed `fd-` on purpose. Coaches.css has
    unscoped selectors (.btn, .nav, .hero ...) that would leak into
@@ -50,6 +62,16 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
 
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
+
+/* Section ids the nav points at. Used for the desktop links, the
+   mobile menu and the "you are here" highlight. */
+const NAV_LINKS = [
+  { id: "problem", label: "Why it matters" },
+  { id: "services", label: "Services" },
+  { id: "process", label: "Process" },
+  { id: "plans", label: "Plans" },
+  { id: "faq", label: "FAQ" },
+];
 
 /* ---------------- Icons (decorative, hidden from AT) ---------------- */
 
@@ -135,7 +157,10 @@ function Words({ text }) {
 
 function Founders() {
   const root = useRef(null);
+  const shellRef = useRef(null);
+  const burgerRef = useRef(null);
   const [openFAQ, setOpenFAQ] = useState(0);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useIsoLayoutEffect(() => {
     const splits = [];
@@ -149,7 +174,7 @@ function Founders() {
       try {
         const { default: Lenis } = await import("lenis");
         if (disposed) return;
-        lenis = new Lenis({ duration: 1.1, smoothWheel: true, anchors: { offset: -72 } });
+        lenis = new Lenis({ duration: 1.1, smoothWheel: true, anchors: { offset: -80 } });
         lenis.on("scroll", ScrollTrigger.update);
         tick = (time) => lenis.raf(time * 1000);
         gsap.ticker.add(tick);
@@ -184,6 +209,33 @@ function Founders() {
           })
         );
       };
+
+      /* ---- nav: firmer pill after the first scroll + "you are here" ----
+         Runs for everyone (reduced motion included): it is state, not motion. */
+      ScrollTrigger.create({
+        start: 24,
+        end: "max",
+        onToggle: (st) => {
+          q(".fd-nav")[0]?.classList.toggle("is-scrolled", st.isActive);
+        },
+      });
+
+      NAV_LINKS.forEach(({ id }) => {
+        const section = root.current?.querySelector(`#${id}`);
+        const links = q(`[data-nav="${id}"]`);
+        if (!section || !links.length) return;
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top 45%",
+          end: "bottom 45%",
+          onToggle: (st) =>
+            links.forEach((a) => {
+              a.classList.toggle("is-active", st.isActive);
+              if (st.isActive) a.setAttribute("aria-current", "location");
+              else a.removeAttribute("aria-current");
+            }),
+        });
+      });
 
       const mm = gsap.matchMedia();
 
@@ -308,21 +360,82 @@ function Founders() {
     };
   }, []);
 
+  /* Mobile menu: Escape closes it (focus returns to the button), so does
+     a tap outside the header or growing the window to desktop width. */
+  useEffect(() => {
+    if (!menuOpen) return;
+
+    const onKey = (e) => {
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        burgerRef.current?.focus();
+      }
+    };
+    const onDown = (e) => {
+      if (!shellRef.current?.contains(e.target)) setMenuOpen(false);
+    };
+    const mq = window.matchMedia("(min-width: 900px)");
+    const onMq = (e) => {
+      if (e.matches) setMenuOpen(false);
+    };
+
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    mq.addEventListener("change", onMq);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+      mq.removeEventListener("change", onMq);
+    };
+  }, [menuOpen]);
+
   return (
     <div className="founders-page" ref={root}>
       <a className="fd-skip" href="#main">Skip to content</a>
 
-      <header className="fd-nav">
-        <Link className="fd-logo fd-display" href="/">{BRAND}</Link>
-        <nav className="fd-nav-links" aria-label="Sections">
-          <a href="#problem">Why it matters</a>
-          <a href="#services">Services</a>
-          <a href="#process">Process</a>
-          <a href="#plans">Plans</a>
-          <a href="#faq">FAQ</a>
-        </nav>
-        <a className="fd-nav-cta" href="#contact">Book a call</a>
-        <div className="fd-nav-progress" aria-hidden="true"><span /></div>
+      <header className="fd-header" data-open={menuOpen}>
+        <div className="fd-nav-shell" ref={shellRef}>
+          <div className="fd-nav">
+            <Link className="fd-logo fd-display" href="/">{BRAND}</Link>
+
+            <nav className="fd-nav-links" aria-label="Sections">
+              {NAV_LINKS.map((l) => (
+                <a key={l.id} href={`#${l.id}`} data-nav={l.id}>{l.label}</a>
+              ))}
+            </nav>
+
+            <div className="fd-nav-actions">
+              <a className="fd-nav-cta" href="#contact">Book a call</a>
+              <button
+                ref={burgerRef}
+                type="button"
+                className="fd-burger"
+                aria-expanded={menuOpen}
+                aria-controls="fd-menu"
+                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                onClick={() => setMenuOpen((o) => !o)}
+              >
+                <span />
+                <span />
+              </button>
+            </div>
+
+            <div className="fd-nav-progress" aria-hidden="true"><span /></div>
+          </div>
+
+          <nav className="fd-menu" id="fd-menu" aria-label="Sections menu">
+            {NAV_LINKS.map((l) => (
+              <a
+                key={l.id}
+                href={`#${l.id}`}
+                data-nav={l.id}
+                onClick={() => setMenuOpen(false)}
+              >
+                {l.label}
+              </a>
+            ))}
+          </nav>
+        </div>
       </header>
 
       <main id="main" tabIndex={-1}>
