@@ -7,19 +7,34 @@
    type, Fraunces + Inter, chapters instead of service cards,
    editions instead of plans. Three services only — web
    development, lead generation + outreach, social media
-   management. The proof strip and genre list are placeholder /
-   example content and MUST be swapped for the real author's own
-   before this goes live. Never list a real publication/press
-   mention here unless it's genuine — fabricated review quotes
-   are a quick way to lose the exact press credibility this page
-   is trying to build.
+   management.
+
+   TRUST SECTION (important)
+   -------------------------------------------------------------
+   The old fake-praise strip is gone. It is replaced by:
+     1. PROMISES     — factual statements about how the work is
+                       done. Only keep the ones that are true for
+                       your business.
+     2. TESTIMONIALS — starts EMPTY. The section only renders once
+                       you add a real quote from a real person
+                       (with their permission). Nothing is shown
+                       and no fake content ever ships by default.
+   No Review / AggregateRating markup is generated: Google ignores
+   self-serving reviews on your own site for Organization /
+   ProfessionalService, and fake markup can trigger a manual
+   action. Real testimonials are shown visibly on the page only.
+
+   GENRES is still example content — trim or rewrite it to match
+   the real body of work before going live.
 
    ⚠️ SEO: metadata (and the separate viewport export) CANNOT be
    exported from a "use client" file. Put both into the route's
-   page.js / layout.js (server component). The full, up-to-date
-   object ships separately as authors-metadata.js — copy it in
-   as-is and just fill in the bracketed placeholders (domain, OG
-   image, social links).
+   page.js / layout.js (server component). The full object ships
+   separately as authors-metadata.js — copy it in as-is and fill
+   in the bracketed placeholders (domain, OG image, social links).
+
+   New CSS classes used here are in authors-additions.css —
+   append that to authors.css.
    ============================================================= */
 
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -33,6 +48,12 @@ gsap.registerPlugin(ScrollTrigger, SplitText);
 const useIsoLayoutEffect =
   typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
+/* ---------------- Site constants ---------------- */
+
+const SITE_URL = "https://zarrar.com";
+const PAGE_URL = `${SITE_URL}/for-authors`;
+const CONTACT_EMAIL = "hello@zarrar.com";
+
 /* ---------------- Icons (decorative — hidden from AT) ---------------- */
 
 const stroke = {
@@ -41,6 +62,8 @@ const stroke = {
   strokeWidth: 1.5,
   strokeLinecap: "round",
   strokeLinejoin: "round",
+  focusable: "false",
+  "aria-hidden": "true",
 };
 
 function BookIcon() {
@@ -76,23 +99,32 @@ function SocialIcon() {
 
 /* =====================  PERSONA-SPECIFIC CONTENT  ===================== */
 
-/* Placeholder — swap for real reviews/mentions only. Don't ship
-   with bracketed names, and never credit a quote to a publication
-   that hasn't actually said it. */
-const PRAISE = [
+/* Factual statements about how the work is done — every line below
+   is something the packages actually include. Delete any line that
+   stops being true. */
+const PROMISES = [
   {
-    quote: "A voice that stays with you long after the last page.",
-    source: "[Publication Name]",
+    title: "Custom-coded",
+    line: "Every site is designed and built from scratch, not dropped into a template.",
   },
   {
-    quote: "One of the most assured debuts of the year.",
-    source: "[Bestseller List / Critic Name]",
+    title: "Search-ready",
+    line: "Clean markup, a sitemap and structured data are in place from launch day.",
   },
   {
-    quote: "Exactly the kind of book you press into a friend's hands.",
-    source: "[Podcast / Reviewer Name]",
+    title: "Researched outreach",
+    line: "Pitches go to agents, hosts and reviewers who already cover your genre.",
+  },
+  {
+    title: "Handed over properly",
+    line: "You get training so you can edit your own site without calling a developer.",
   },
 ];
+
+/* Add REAL testimonials here, with permission. While this array is
+   empty the whole section is skipped. Example shape:
+   { quote: "…", name: "Real Name", role: "Author of Title", url: "https://…" } */
+const TESTIMONIALS = [];
 
 /* Example author categories — replace or trim to match the
    real author's actual genre and body of work. */
@@ -118,7 +150,7 @@ const CHAPTERS = [
   {
     numeral: "II",
     title: "Lead generation & outreach",
-    body: "We build the list of literary agents, podcast hosts, bookshops and press already covering your genre, then run the cold outreach and follow-up that turns that list into replies and bookings.",
+    body: "We build the list of literary agents, podcast hosts, bookshops and press already covering your genre, then run the cold outreach and follow-up that turns that list into conversations and bookings.",
     cta: "Get me covered",
     icon: <OutreachIcon />,
   },
@@ -145,7 +177,7 @@ const TIMELINE = [
   {
     when: "Weeks 7–12",
     title: "Momentum",
-    body: "Press mentions and reader replies start layering on top of outreach, and the site keeps climbing in search while social keeps you visible.",
+    body: "Replies from outreach start to build up, the site keeps gaining ground in search, and social keeps you visible between releases.",
   },
 ];
 
@@ -160,11 +192,11 @@ const FAQS = [
   },
   {
     q: "Will my author website actually show up in Google search?",
-    a: "Ranking takes ongoing work, not a one-time setup, but every site we build starts with clean semantic markup, fast performance, a proper sitemap and structured data for your books and bio, which is the technical foundation search engines need before content and links can do the rest.",
+    a: "Ranking takes ongoing work, not a one-time setup, and nobody can promise a position. What we do guarantee is the technical foundation: clean semantic markup, fast performance, a proper sitemap and structured data for your books and bio. Content and links then build on top of that.",
   },
   {
     q: "Can lead generation and outreach really get me agents, press and podcast bookings?",
-    a: "That's the point of the service — we research and build the list of agents, program hosts, bookshops and reviewers already covering your genre, then send the outreach and follow-up that gets you onto their calendar.",
+    a: "We research and build the list of agents, hosts, bookshops and reviewers already covering your genre, then send the outreach and follow-up. Whether someone says yes depends on your book and timing, so we can't promise placements, but you'll have a real, targeted list in front of the right people instead of hoping to be discovered.",
   },
   {
     q: "Do you actually manage my social media, or just tell me what to post?",
@@ -187,7 +219,7 @@ const EDITIONS = [
     includes: [
       "Premium author website, custom-designed and built from scratch",
       "Book pages with buy links, reviews and press kit",
-      "On-page SEO, structured data and Google Business setup",
+      "On-page SEO, structured data and Google Search Console setup",
       "Handover and training so you can edit it",
     ],
   },
@@ -204,32 +236,36 @@ const EDITIONS = [
     ],
   },
   {
-    id: "collectors",
-    name: "Collector's Edition",
+    id: "reborn",
+    name: "Reborn",
     line: "For selling more books.",
-    body: "The full engine. We build the presence, keep it visible, then go get the readers and the press.",
+    body: "The full engine. We build the presence, keep it visible, then go after the readers and the press.",
     includes: [
       "Everything in Hardcover",
       "Lead generation: a built list of agents, press and podcasts in your genre",
       "Cold outreach campaigns and follow-up, run on your behalf",
-      "Booked interviews and pitches tracked in your calendar",
+      "Interviews and pitches tracked in one shared calendar",
     ],
     featured: true,
   },
 ];
 
-/* Structured data */
+/* ---------------- Structured data ---------------- */
+
+/* Escape "<" so content can never close the <script> tag early. */
+const ld = (obj) => JSON.stringify(obj).replace(/</g, "\\u003c");
+
 const JSON_LD_SERVICE = {
   "@context": "https://schema.org",
   "@type": "ProfessionalService",
-  "@id": "https://zarrar.com/for-authors#service",
+  "@id": `${PAGE_URL}#service`,
   name: "Zarrar — Websites, Lead Generation & Social Media for Authors",
   description:
     "Premium website development, lead generation and outreach, and social media management for authors and writers.",
-  url: "https://zarrar.com/for-authors",
+  url: PAGE_URL,
   areaServed: "Worldwide",
   audience: { "@type": "Audience", audienceType: "Authors" },
-  provider: { "@type": "Organization", name: "Zarrar", url: "https://zarrar.com" },
+  provider: { "@type": "Organization", name: "Zarrar", url: SITE_URL },
   hasOfferCatalog: {
     "@type": "OfferCatalog",
     name: "Services",
@@ -259,36 +295,52 @@ const JSON_LD_BREADCRUMB = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
   itemListElement: [
-    { "@type": "ListItem", position: 1, name: "Home", item: "https://zarrar.com/" },
-    { "@type": "ListItem", position: 2, name: "For Authors", item: "https://zarrar.com/for-authors" },
+    { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+    { "@type": "ListItem", position: 2, name: "For Authors", item: PAGE_URL },
   ],
 };
+
+const JSON_LD_BLOCKS = [JSON_LD_SERVICE, JSON_LD_FAQ, JSON_LD_BREADCRUMB];
+
+/* ---------------- Helpers ---------------- */
+
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
 /* ---------------- Component ---------------- */
 
 function Authors() {
   const root = useRef(null);
+  const lenisRef = useRef(null);
+  const toggleRef = useRef(null);
   const [openFAQ, setOpenFAQ] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
 
-  /* Close the mobile menu on Escape or an outside click, and lock
-     background scroll while it's open. */
+  /* Mobile menu: close on Escape (and return focus to the toggle)
+     or outside click, lock background scroll while open. */
   useEffect(() => {
-    if (!menuOpen) {
-      document.body.style.overflow = "";
-      return;
-    }
+    if (!menuOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    lenisRef.current?.stop();
+
     const onKeyDown = (e) => {
-      if (e.key === "Escape") setMenuOpen(false);
+      if (e.key === "Escape") {
+        setMenuOpen(false);
+        toggleRef.current?.focus();
+      }
     };
     const onPointerDown = (e) => {
       if (!e.target.closest(".nav")) setMenuOpen(false);
     };
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("pointerdown", onPointerDown);
+
     return () => {
-      document.body.style.overflow = "";
+      document.body.style.overflow = previousOverflow;
+      lenisRef.current?.start();
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("pointerdown", onPointerDown);
     };
@@ -296,16 +348,22 @@ function Authors() {
 
   useIsoLayoutEffect(() => {
     const splits = [];
-    let lenis;
     const node = root.current;
+    let cancelled = false;
+    let tickerFn = null;
+    let mm = null;
 
+    /* ---- smooth scroll (Lenis), fully cleaned up on unmount ---- */
     const startSmooth = async () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (prefersReducedMotion()) return;
       try {
         const { default: Lenis } = await import("lenis");
-        lenis = new Lenis({ duration: 1.1, smoothWheel: true });
-        lenis.on("scroll", ScrollTrigger.update);
-        gsap.ticker.add((t) => lenis.raf(t * 1000));
+        if (cancelled) return;
+        const instance = new Lenis({ duration: 1.1, smoothWheel: true });
+        lenisRef.current = instance;
+        instance.on("scroll", ScrollTrigger.update);
+        tickerFn = (t) => instance.raf(t * 1000);
+        gsap.ticker.add(tickerFn);
         gsap.ticker.lagSmoothing(0);
       } catch {
         /* native scroll is fine */
@@ -313,26 +371,37 @@ function Authors() {
     };
     startSmooth();
 
-    /* Same-page nav links (#genres, #chapters, ...) should glide
-       to their target instead of jumping — route the scroll
-       through Lenis when it's running so it stays in sync with
-       the rest of the page's scroll animation, and fall back to
-       native smooth scrolling otherwise. Also closes the mobile
-       menu after any in-page navigation. */
+    /* Same-page nav links glide to their target. Goes through Lenis
+       when it's running, native smooth scroll otherwise. Moves focus
+       to the target so keyboard and screen-reader users land there,
+       and closes the mobile menu. */
     const handleAnchorClick = (e) => {
       const link = e.target.closest('a[href^="#"]');
       if (!link) return;
       const hash = link.getAttribute("href");
       if (!hash || hash === "#") return;
-      const target = document.querySelector(hash);
+
+      let target = null;
+      try {
+        target = document.querySelector(hash);
+      } catch {
+        return;
+      }
       if (!target) return;
+
       e.preventDefault();
-      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      if (lenis && !reduceMotion) {
+      const reduce = prefersReducedMotion();
+      const lenis = lenisRef.current;
+
+      if (lenis && !reduce) {
         lenis.scrollTo(target, { offset: -80, duration: 1.3 });
       } else {
-        target.scrollIntoView({ behavior: reduceMotion ? "auto" : "smooth", block: "start" });
+        target.scrollIntoView({ behavior: reduce ? "auto" : "smooth", block: "start" });
       }
+
+      if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+      target.focus({ preventScroll: true });
+
       window.history.pushState(null, "", hash);
       setMenuOpen(false);
     };
@@ -342,7 +411,7 @@ function Authors() {
       const q = self.selector;
 
       /* Ink-fill: lines grow in from the left edge, like a line
-         being written, rather than dropping/flipping into place. */
+         being written. */
       const inkIn = (el, opts = {}) => {
         if (!el) return gsap.timeline();
         const split = SplitText.create(el, {
@@ -390,11 +459,12 @@ function Authors() {
         });
       };
 
-      /* Page-turn: the recurring physical motif for every card,
-         chapter row and edition — like opening to that page. */
+      /* Page-turn: the recurring physical motif for chapter rows and
+         editions — like opening to that page. Perspective is set on
+         each element so every card rotates in its own 3D space. */
       const pageTurn = (elements, opts = {}) => {
-        if (!elements || (elements.length === 0)) return gsap.timeline();
-        gsap.set(opts.container || elements, { transformPerspective: 1400 });
+        if (!elements || elements.length === 0) return gsap.timeline();
+        gsap.set(elements, { transformPerspective: 1400 });
         return gsap.from(elements, {
           rotateY: -62,
           opacity: 0,
@@ -426,7 +496,7 @@ function Authors() {
         });
       };
 
-      const mm = gsap.matchMedia();
+      mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: reduce)", () => {
         gsap.set(q(".nav-progress span"), { scaleX: 0 });
@@ -435,36 +505,67 @@ function Authors() {
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         /* ---- one orchestrated load sequence ---- */
         const shelf = q(".spine");
-        gsap.timeline({ defaults: { ease: "expo.out" } })
+        gsap
+          .timeline({ defaults: { ease: "expo.out" } })
           .from(q(".logo, .nav-links a, .nav-cta, .nav-toggle"), {
-            y: -18, opacity: 0, duration: 0.7, stagger: 0.05,
+            y: -18,
+            opacity: 0,
+            duration: 0.7,
+            stagger: 0.05,
           })
           .add(inkIn(q(".hero-l1")[0]), 0.1)
           .add(inkIn(q(".hero-l2")[0]), 0.28)
           .add(wordsUp(q(".hero-sub")[0]), 0.55)
           .from(q(".hero-actions > *"), { y: 20, opacity: 0, duration: 0.7, stagger: 0.08 }, 0.7)
-          .from(shelf, {
-            xPercent: 40, opacity: 0, rotate: -6, duration: 1,
-            stagger: { each: 0.06, from: "end" },
-          }, 0.35);
+          .from(
+            shelf,
+            {
+              xPercent: 40,
+              opacity: 0,
+              rotate: -6,
+              duration: 1,
+              stagger: { each: 0.06, from: "end" },
+            },
+            0.35
+          );
 
         /* ---- scroll progress, styled as a bookmark ribbon ---- */
         gsap.to(q(".nav-progress span"), {
-          scaleX: 1, ease: "none",
-          scrollTrigger: { trigger: root.current, start: "top top", end: "bottom bottom", scrub: 0.3 },
+          scaleX: 1,
+          ease: "none",
+          scrollTrigger: { trigger: node, start: "top top", end: "bottom bottom", scrub: 0.3 },
         });
 
         /* ---- hero settles back as you leave it ---- */
         gsap.to(q(".hero-copy"), {
-          yPercent: -10, opacity: 0.3, ease: "none",
+          yPercent: -10,
+          opacity: 0.3,
+          ease: "none",
           scrollTrigger: { trigger: q(".hero")[0], start: "top top", end: "bottom top", scrub: 0.6 },
         });
 
-        /* ---- praise strip ---- */
+        /* ---- how-we-work strip ---- */
         gsap.from(q(".praise-inner > *"), {
-          y: 14, opacity: 0, duration: 0.6, ease: "power3.out", stagger: 0.08,
+          y: 14,
+          opacity: 0,
+          duration: 0.6,
+          ease: "power3.out",
+          stagger: 0.08,
           scrollTrigger: { trigger: q(".praise")[0], start: "top 88%", once: true },
         });
+
+        /* ---- real testimonials (only present if you add some) ---- */
+        const testimonials = q(".testimonial");
+        if (testimonials.length) {
+          gsap.from(testimonials, {
+            y: 20,
+            opacity: 0,
+            duration: 0.7,
+            ease: "power3.out",
+            stagger: 0.1,
+            scrollTrigger: { trigger: q(".testimonials")[0], start: "top 82%", once: true },
+          });
+        }
 
         /* ---- section heads ---- */
         q(".section-head").forEach((head) => {
@@ -472,46 +573,59 @@ function Authors() {
           wordsUp(head.querySelector("p"), { trigger: head, start: "top 80%" });
         });
 
-        /* ---- genres: page-turn cards ---- */
-        pageTurn(q(".card"), { trigger: q(".genres-grid")[0], container: q(".genres-grid")[0] });
+        /* ---- genres ---- */
+        pageTurn(q(".card"), { trigger: q(".genres-grid")[0] });
 
         /* ---- chapters: page-turn rows + drawn icons ---- */
-        pageTurn(q(".chapter"), { trigger: q(".chapters-list")[0], container: q(".chapters-list")[0], stagger: 0.12 });
+        pageTurn(q(".chapter"), { trigger: q(".chapters-list")[0], stagger: 0.12 });
         q(".chapter").forEach((row) => drawIcon(row.querySelector("svg"), row));
 
         /* ---- timeline ---- */
         gsap.from(q(".timeline-step"), {
-          y: 40, opacity: 0, duration: 0.85, ease: "power3.out", stagger: 0.1,
+          y: 40,
+          opacity: 0,
+          duration: 0.85,
+          ease: "power3.out",
+          stagger: 0.1,
           scrollTrigger: { trigger: q(".timeline-list")[0], start: "top 82%", once: true },
         });
 
         /* ---- editions: page-turn + includes stagger ---- */
-        pageTurn(q(".edition"), { trigger: q(".editions-grid")[0], container: q(".editions-grid")[0], stagger: 0.1 });
+        pageTurn(q(".edition"), { trigger: q(".editions-grid")[0], stagger: 0.1 });
         q(".edition").forEach((ed) => {
           gsap.from(ed.querySelectorAll(".edition-includes li"), {
-            y: 12, opacity: 0, duration: 0.5, ease: "power3.out", stagger: 0.05,
+            y: 12,
+            opacity: 0,
+            duration: 0.5,
+            ease: "power3.out",
+            stagger: 0.05,
             scrollTrigger: { trigger: ed, start: "top 70%", once: true },
           });
         });
 
         /* ---- FAQ rows ---- */
         gsap.from(q(".faq-item"), {
-          y: 22, opacity: 0, duration: 0.65, ease: "power3.out", stagger: 0.06,
+          y: 22,
+          opacity: 0,
+          duration: 0.65,
+          ease: "power3.out",
+          stagger: 0.06,
           scrollTrigger: { trigger: q(".faq-list")[0], start: "top 82%", once: true },
         });
 
         /* ---- closing ---- */
         const close = q(".closing")[0];
         if (close) {
-          gsap.timeline({ scrollTrigger: { trigger: close, start: "top 82%", once: true } })
+          gsap
+            .timeline({ scrollTrigger: { trigger: close, start: "top 82%", once: true } })
             .add(inkIn(close.querySelector("h2")))
             .from(close.querySelector(".btn"), { y: 24, opacity: 0, duration: 0.6, ease: "back.out(1.6)" }, "-=0.4")
             .from(close.querySelector(".closing-links"), { opacity: 0, duration: 0.5 }, "-=0.2");
         }
       });
 
-      /* ---- magnetic buttons ---- */
-      mm.add("(hover: hover) and (pointer: fine)", () => {
+      /* ---- magnetic buttons (fine pointers only) ---- */
+      mm.add("(hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference)", () => {
         const cleanups = [];
         q(".magnetic").forEach((el) => {
           const xTo = gsap.quickTo(el, "x", { duration: 0.5, ease: "power3" });
@@ -521,7 +635,10 @@ function Authors() {
             xTo((e.clientX - (r.left + r.width / 2)) * 0.22);
             yTo((e.clientY - (r.top + r.height / 2)) * 0.34);
           };
-          const leave = () => { xTo(0); yTo(0); };
+          const leave = () => {
+            xTo(0);
+            yTo(0);
+          };
           el.addEventListener("pointermove", move);
           el.addEventListener("pointerleave", leave);
           cleanups.push(() => {
@@ -531,36 +648,40 @@ function Authors() {
         });
         return () => cleanups.forEach((fn) => fn());
       });
-
-      return () => mm.revert();
     }, root);
 
     if (typeof document !== "undefined" && document.fonts?.ready) {
-      document.fonts.ready.then(() => ScrollTrigger.refresh());
+      document.fonts.ready.then(() => {
+        if (!cancelled) ScrollTrigger.refresh();
+      });
     }
 
     return () => {
+      cancelled = true;
       node?.removeEventListener("click", handleAnchorClick);
-      lenis?.destroy();
-      splits.forEach((s) => s.revert());
+
+      mm?.revert();
       ctx.revert();
+      splits.forEach((s) => s.revert());
+
+      if (tickerFn) gsap.ticker.remove(tickerFn);
+      gsap.ticker.lagSmoothing(500, 33);
+      lenisRef.current?.destroy();
+      lenisRef.current = null;
     };
   }, []);
 
   return (
     <div className="authors-page" ref={root}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_SERVICE) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_FAQ) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(JSON_LD_BREADCRUMB) }}
-      />
+      {JSON_LD_BLOCKS.map((block, i) => (
+        <script
+          key={i}
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: ld(block) }}
+        />
+      ))}
+
+      <a className="skip-link" href="#main">Skip to content</a>
 
       <header className="nav">
         <a className="logo" href="/">Zarrar</a>
@@ -571,12 +692,14 @@ function Authors() {
         >
           <a href="#genres">Genres</a>
           <a href="#chapters">Services</a>
+          <a href="#how">Process</a>
           <a href="#editions">Editions</a>
           <a href="#faq">FAQ</a>
         </nav>
         <div className="nav-right">
-          <a className="nav-cta magnetic" href="#contact">Book a call</a>
+          <a className="nav-cta magnetic" href="#contact">Contact</a>
           <button
+            ref={toggleRef}
             type="button"
             className="nav-toggle"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -592,17 +715,17 @@ function Authors() {
         <div className="nav-progress" aria-hidden="true"><span /></div>
       </header>
 
-      <main>
+      <main id="main">
         <section className="hero" id="top">
           <div className="hero-copy">
             <h1 className="hero-heading">
-              <span className="hero-l1">You wrote the book.</span>
+              <span className="hero-l1">You wrote the book.</span>{" "}
               <span className="hero-l2">We build its audience.</span>
             </h1>
             <p className="hero-sub">
               A premium author website that sells the book on sight, lead
-              generation and outreach that land you agents, press and
-              podcasts, and social media management that keeps readers
+              generation and outreach that put you in front of agents, press
+              and podcasts, and social media management that keeps readers
               coming back for the next one.
             </p>
             <div className="hero-actions">
@@ -622,19 +745,43 @@ function Authors() {
           </div>
         </section>
 
-        <section className="praise" id="praise" aria-label="Example praise strip">
-          <div className="praise-inner">
-            {PRAISE.map((p) => (
-              <blockquote className="praise-quote" key={p.quote}>
-                &ldquo;{p.quote}&rdquo;
-                <span className="praise-source">{p.source}</span>
-              </blockquote>
+        {/* Factual "how we work" strip — replaces the old fake praise. */}
+        <section className="praise" id="praise" aria-label="How we work">
+          <ul className="praise-inner">
+            {PROMISES.map((p) => (
+              <li className="praise-quote" key={p.title}>
+                <strong>{p.title}</strong>
+                <span className="praise-source">{p.line}</span>
+              </li>
             ))}
-            <p className="praise-note">
-              Example layout — only real reviews and mentions go here.
-            </p>
-          </div>
+          </ul>
         </section>
+
+        {/* Renders only once you add real testimonials above. */}
+        {TESTIMONIALS.length > 0 && (
+          <section className="testimonials" id="testimonials" aria-labelledby="testimonials-title">
+            <div className="section-head">
+              <h2 id="testimonials-title">What authors say</h2>
+            </div>
+            <div className="testimonials-list">
+              {TESTIMONIALS.map((t) => (
+                <figure className="testimonial" key={`${t.name}-${t.quote.slice(0, 24)}`}>
+                  <blockquote>
+                    <p>&ldquo;{t.quote}&rdquo;</p>
+                  </blockquote>
+                  <figcaption>
+                    {t.url ? (
+                      <a href={t.url} rel="noopener noreferrer" target="_blank">{t.name}</a>
+                    ) : (
+                      t.name
+                    )}
+                    {t.role ? `, ${t.role}` : ""}
+                  </figcaption>
+                </figure>
+              ))}
+            </div>
+          </section>
+        )}
 
         <section className="genres" id="genres" aria-labelledby="genres-title">
           <div className="section-head">
@@ -650,9 +797,6 @@ function Authors() {
               </li>
             ))}
           </ul>
-          <p className="genres-note">
-            Example categories — trim or rewrite to match your real body of work.
-          </p>
         </section>
 
         <section className="chapters" id="chapters" aria-labelledby="chapters-title">
@@ -679,7 +823,7 @@ function Authors() {
         <section className="timeline" id="how" aria-labelledby="timeline-title">
           <div className="section-head">
             <h2 id="timeline-title">What the first 90 days look like</h2>
-            <p>A rough shape of how the pieces come online, in order.</p>
+            <p>The rough order the pieces come online. Exact pace depends on your genre and release calendar.</p>
           </div>
 
           <ol className="timeline-list">
@@ -691,9 +835,6 @@ function Authors() {
               </li>
             ))}
           </ol>
-          <p className="timeline-note">
-            Illustrative timeline — exact pace depends on your genre and release calendar.
-          </p>
         </section>
 
         <section className="editions" id="editions" aria-labelledby="editions-title">
@@ -726,7 +867,7 @@ function Authors() {
         <section className="faq" id="faq" aria-labelledby="faq-title">
           <div className="section-head">
             <h2 id="faq-title">Questions authors ask us</h2>
-            <p>If yours isn&apos;t here, ask us directly — we reply fast.</p>
+            <p>If yours isn&apos;t here, ask us directly.</p>
           </div>
 
           <div className="faq-list">
@@ -736,17 +877,26 @@ function Authors() {
               const aId = `faq-a-${i}`;
               return (
                 <div className={`faq-item${isOpen ? " is-open" : ""}`} key={f.q}>
-                  <button
-                    className="faq-q"
-                    id={qId}
-                    aria-expanded={isOpen}
-                    aria-controls={aId}
-                    onClick={() => setOpenFAQ(isOpen ? -1 : i)}
+                  <h3 className="faq-heading">
+                    <button
+                      type="button"
+                      className="faq-q"
+                      id={qId}
+                      aria-expanded={isOpen}
+                      aria-controls={aId}
+                      onClick={() => setOpenFAQ(isOpen ? -1 : i)}
+                    >
+                      <span>{f.q}</span>
+                      <span className="faq-mark" aria-hidden="true">+</span>
+                    </button>
+                  </h3>
+                  <div
+                    className="faq-a"
+                    id={aId}
+                    role="region"
+                    aria-labelledby={qId}
+                    aria-hidden={!isOpen}
                   >
-                    <span>{f.q}</span>
-                    <span className="faq-mark" aria-hidden="true">+</span>
-                  </button>
-                  <div className="faq-a" id={aId} role="region" aria-labelledby={qId}>
                     <div className="faq-a-inner">
                       <p>{f.a}</p>
                     </div>
@@ -759,7 +909,7 @@ function Authors() {
 
         <section className="closing" id="contact" aria-labelledby="contact-title">
           <h2 id="contact-title">Ready to sell more books?</h2>
-          <a className="btn btn-solid btn-lg magnetic" href="mailto:hello@zarrar.com">
+          <a className="btn btn-solid btn-lg magnetic" href={`mailto:${CONTACT_EMAIL}`}>
             Say hello
           </a>
           <p className="closing-links">

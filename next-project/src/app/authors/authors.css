@@ -4,13 +4,18 @@
    Zarrar — /for-authors
    Black-and-white "editor's desk" theme: white paper page, ink
    type, and a single grayscale accent scale — no color. The
-   Collector's Edition renders as a solid black card, so the
-   page's own hierarchy carries a literal black/white duality.
+   Reborn edition renders as a solid black card, so the page's
+   own hierarchy carries a literal black/white duality.
    Chapters instead of service cards, editions instead of plans.
-   Fonts: Fraunces (display, serif) + Inter (body/UI), swapped
-   in from Newsreader + IBM Plex Sans. All accent grays below
-   were checked against their backgrounds for WCAG AA contrast
-   — keep that in mind if you retint anything.
+   Fonts: Fraunces (display, serif) + Inter (body/UI).
+   All accent grays below were checked against their backgrounds
+   for WCAG AA contrast — keep that in mind if you retint
+   anything.
+
+   Pairs with Authors.jsx. This file already includes everything
+   that used to live in authors-additions.css (skip link,
+   how-we-work strip, testimonials, focus styles) — you don't
+   need that separate file any more.
    ========================================================= */
 
 .authors-page {
@@ -30,6 +35,7 @@
   --gut: clamp(1.15rem, 5vw, 5rem);
   --block: clamp(3.75rem, 10vw, 8.5rem);
   --maxw: 1220px;
+  --nav-offset: 80px;       /* sticky-nav height; used for anchor scroll offset */
 
   background: var(--paper);
   color: var(--ink);
@@ -50,9 +56,20 @@
 .authors-page p,
 .authors-page li { overflow-wrap: break-word; }
 
-/* Smooth-scroll fallback for same-page nav links (JS also drives
-   this through Lenis when it's running — see authors.jsx). */
+/* Native smooth scroll is the fallback; when Lenis is running it
+   adds .lenis to <html> and takes over (see the Lenis block below). */
 html { scroll-behavior: smooth; }
+
+/* Anchor targets sit clear of the sticky nav even without JS. */
+.authors-page [id] { scroll-margin-top: var(--nav-offset); }
+
+/* ---------- Lenis (smooth-scroll library) ---------- */
+
+html.lenis,
+html.lenis body { height: auto; }
+.lenis.lenis-smooth { scroll-behavior: auto !important; }
+.lenis.lenis-stopped { overflow: hidden; }
+.lenis.lenis-smooth iframe { pointer-events: none; }
 
 /* ---------- Split-text primitives ---------- */
 
@@ -78,16 +95,36 @@ html { scroll-behavior: smooth; }
 .shell,
 .hero,
 .section-head,
+.testimonials-list,
 .genres-grid,
-.genres-note,
 .chapters-list,
 .timeline-list,
-.timeline-note,
 .editions-grid,
 .faq-list {
   max-width: var(--maxw);
   margin-inline: auto;
   padding-inline: var(--gut);
+}
+
+/* ---------- Skip link (keyboard users) ---------- */
+
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 200;
+  padding: 0.7rem 1.1rem;
+  background: var(--accent);
+  color: var(--paper);
+  font-weight: 500;
+  font-size: 0.93rem;
+  text-decoration: none;
+  border-radius: 3px;
+}
+.skip-link:focus,
+.skip-link:focus-visible {
+  left: 0.75rem;
+  top: 0.75rem;
 }
 
 /* ---------- Buttons ---------- */
@@ -121,9 +158,9 @@ html { scroll-behavior: smooth; }
 }
 .btn-ghost:hover, .btn-ghost:focus-visible { color: var(--accent-soft); border-color: var(--accent-soft); }
 
-/* Featured-edition CTA: a white pill on the black Collector's
-   Edition card, inverting to a dark-gray fill on hover/focus so
-   it stays visible against the card's own black background. */
+/* Featured-edition CTA: a white pill on the black Reborn card,
+   inverting to a dark-gray fill on hover/focus so it stays
+   visible against the card's own black background. */
 .btn-invert { background: var(--paper); color: var(--ink); }
 .btn-invert:hover, .btn-invert:focus-visible { background: var(--accent-hover); color: var(--paper); }
 
@@ -155,14 +192,18 @@ html { scroll-behavior: smooth; }
   flex: none;
 }
 
-.nav-links { display: flex; gap: clamp(0.85rem, 2.4vw, 2rem); }
+.nav-links { display: flex; gap: clamp(0.85rem, 2.2vw, 2rem); }
 
+/* Labels are written in sentence case in the markup and shown in
+   caps here, so screen readers don't spell them out letter by letter. */
 .nav-links a {
   position: relative;
   color: var(--muted);
   text-decoration: none;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   font-weight: 500;
-  font-size: clamp(0.8rem, 0.75rem + 0.25vw, 0.9rem);
+  font-size: clamp(0.74rem, 0.7rem + 0.2vw, 0.84rem);
   padding-bottom: 2px;
   white-space: nowrap;
   transition: color 0.3s ease;
@@ -185,7 +226,7 @@ html { scroll-behavior: smooth; }
 
 .nav-right { display: flex; align-items: center; gap: 0.75rem; flex: none; }
 
-/* Mobile menu toggle — hidden on desktop, shown under 600px */
+/* Mobile menu toggle — hidden on desktop, shown under 720px */
 .nav-toggle {
   display: none;
   flex-direction: column;
@@ -228,7 +269,8 @@ html { scroll-behavior: smooth; }
   transform-origin: left;
 }
 
-@media (max-width: 599px) {
+/* Five nav links need the collapsed menu a little earlier than before. */
+@media (max-width: 719px) {
   .nav-toggle { display: inline-flex; }
 
   .nav-links {
@@ -250,7 +292,7 @@ html { scroll-behavior: smooth; }
   .nav-links a {
     padding: 0.85rem 0;
     border-bottom: 1px solid var(--rule);
-    font-size: 1rem;
+    font-size: 0.9rem;
   }
 
   .nav-links a:last-child { border-bottom: none; }
@@ -278,6 +320,11 @@ html { scroll-behavior: smooth; }
   letter-spacing: -0.015em;
   margin-bottom: clamp(1.4rem, 3.5vw, 2rem);
 }
+
+/* Each half of the headline sits on its own line even before (or
+   without) the split-text animation — e.g. with reduced motion. */
+.hero-l1,
+.hero-l2 { display: block; }
 
 .hero-heading .line { padding-bottom: 0.06em; }
 .hero-l2 { color: var(--accent-soft); font-style: italic; font-weight: 500; }
@@ -356,52 +403,100 @@ html { scroll-behavior: smooth; }
   margin: 0;
   color: var(--muted);
   font-size: clamp(0.98rem, 0.94rem + 0.2vw, 1.08rem);
-  max-width: 34ch;
+  max-width: 38ch;
 }
 
-/* ---------- Praise strip (proof) ---------- */
+/* ---------- How-we-work strip (factual promises) ---------- */
 
 .praise { border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); background: var(--paper-alt); }
 
 .praise-inner {
+  list-style: none;
   max-width: var(--maxw);
-  margin-inline: auto;
-  padding: clamp(1.75rem, 4vw, 2.5rem) var(--gut);
+  margin: 0 auto;
+  padding: clamp(1.75rem, 4vw, 2.75rem) var(--gut);
   display: grid;
   gap: clamp(1.25rem, 3vw, 2rem);
   grid-template-columns: minmax(0, 1fr);
 }
 
-@media (min-width: 760px) {
-  .praise-inner { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (min-width: 560px) {
+  .praise-inner { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1000px) {
+  .praise-inner { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
 
 .praise-quote {
   margin: 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--rule-strong);
+  font-style: normal;
+}
+
+.praise-quote strong {
+  display: block;
+  margin-bottom: 0.4rem;
   font-family: 'Fraunces', Georgia, serif;
-  font-style: italic;
-  font-size: clamp(1rem, 0.96rem + 0.25vw, 1.12rem);
-  line-height: 1.5;
+  font-weight: 600;
+  font-size: clamp(1.05rem, 1rem + 0.25vw, 1.2rem);
+  line-height: 1.2;
   color: var(--ink);
 }
 
 .praise-source {
   display: block;
-  margin-top: 0.5rem;
   font-family: 'Inter', sans-serif;
   font-style: normal;
-  font-size: 0.83rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
   color: var(--muted);
 }
 
-.praise-note {
-  grid-column: 1 / -1;
-  margin: 0.25rem 0 0;
-  font-size: 0.8rem;
-  color: var(--muted);
-  border-top: 1px dashed var(--rule-strong);
-  padding-top: 1rem;
+/* ---------- Testimonials (only rendered when real ones exist) ---------- */
+
+.testimonials { padding-block: var(--block); border-top: 1px solid var(--rule); }
+
+.testimonials-list {
+  display: grid;
+  gap: clamp(1.5rem, 3.5vw, 2.75rem);
+  grid-template-columns: minmax(0, 1fr);
 }
+
+@media (min-width: 760px) {
+  .testimonials-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.testimonial {
+  margin: 0;
+  padding-top: 1.25rem;
+  border-top: 2px solid var(--accent);
+}
+
+.testimonial blockquote { margin: 0 0 1rem; }
+
+.testimonial blockquote p {
+  margin: 0;
+  font-family: 'Fraunces', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(1.1rem, 1.05rem + 0.5vw, 1.4rem);
+  line-height: 1.5;
+  color: var(--ink);
+  max-width: 44ch;
+}
+
+.testimonial figcaption {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.testimonial figcaption a {
+  color: var(--accent-soft);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.testimonial figcaption a:hover,
+.testimonial figcaption a:focus-visible { color: var(--ink); }
 
 /* ---------- Genres (index-card grid) ---------- */
 
@@ -430,7 +525,7 @@ html { scroll-behavior: smooth; }
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
-  transform-style: preserve-3d;
+  transform-origin: 0% 50%;
 }
 
 .card::before {
@@ -458,13 +553,6 @@ html { scroll-behavior: smooth; }
   line-height: 1.55;
 }
 
-.genres-note {
-  margin-top: clamp(1.25rem, 2.6vw, 1.75rem);
-  color: var(--muted);
-  font-size: 0.85rem;
-  font-style: italic;
-}
-
 /* ---------- Chapters (services, as a manuscript list) ---------- */
 
 .chapters { padding-block: var(--block); border-top: 1px solid var(--rule); }
@@ -477,6 +565,7 @@ html { scroll-behavior: smooth; }
   padding-block: clamp(1.75rem, 3.5vw, 2.5rem);
   border-top: 1px solid var(--rule);
   align-items: start;
+  transform-origin: 0% 50%;
 }
 
 .chapters-list .chapter:last-child { border-bottom: 1px solid var(--rule); }
@@ -562,13 +651,6 @@ html { scroll-behavior: smooth; }
   line-height: 1.55;
 }
 
-.timeline-note {
-  margin-top: clamp(1.5rem, 3vw, 2rem);
-  color: var(--muted);
-  font-size: 0.86rem;
-  font-style: italic;
-}
-
 /* ---------- Editions (plans, as book editions) ---------- */
 
 .editions { padding-block: var(--block); border-top: 1px solid var(--rule); }
@@ -621,9 +703,7 @@ html { scroll-behavior: smooth; }
   letter-spacing: -0.01em;
   color: var(--ink);
 }
-.edition.is-featured .edition-name { color: var(--paper); }
-
-.edition.is-featured .edition-name { padding-right: 6.5rem; }
+.edition.is-featured .edition-name { color: var(--paper); padding-right: 6.5rem; }
 
 .edition-line { margin: 0; color: var(--accent-soft); font-weight: 600; font-size: 0.98rem; }
 .edition.is-featured .edition-line { color: var(--paper); }
@@ -670,6 +750,10 @@ html { scroll-behavior: smooth; }
 .faq-item { border-top: 1px solid var(--rule); }
 .faq-item:last-child { border-bottom: 1px solid var(--rule); }
 
+/* The question button now sits inside an <h3> for document structure;
+   reset the heading so it looks exactly like before. */
+.faq-heading { margin: 0; font: inherit; }
+
 .faq-q {
   width: 100%;
   display: flex;
@@ -686,11 +770,6 @@ html { scroll-behavior: smooth; }
   padding: clamp(1.1rem, 2.6vw, 1.5rem) 0;
   font-weight: 500;
   font-size: clamp(1.05rem, 1rem + 0.3vw, 1.28rem);
-}
-.faq-q:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 4px;
-  border-radius: 3px;
 }
 
 .faq-mark {
@@ -715,7 +794,17 @@ html { scroll-behavior: smooth; }
 }
 .faq-item.is-open .faq-a { grid-template-rows: 1fr; }
 
-.faq-a-inner { overflow: hidden; }
+/* Closed answers are also hidden visually-for-the-tab-order (matches the
+   aria-hidden in the markup); the delay lets the close animation finish. */
+.faq-a-inner {
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s linear 0.45s;
+}
+.faq-item.is-open .faq-a-inner {
+  visibility: visible;
+  transition-delay: 0s;
+}
 
 .faq-a p {
   margin: 0 0 clamp(1.1rem, 2.6vw, 1.5rem);
@@ -747,7 +836,7 @@ html { scroll-behavior: smooth; }
   color: var(--ink);
 }
 
-.closing-links { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: center; }
+.closing-links { display: flex; flex-wrap: wrap; gap: 0.4rem 1rem; justify-content: center; margin: 0; }
 .closing-alt { margin: 0; color: var(--muted); font-size: 0.95rem; }
 .closing-alt a { color: var(--accent-soft); text-decoration: underline; text-underline-offset: 3px; }
 .closing-alt a:hover,
@@ -755,11 +844,22 @@ html { scroll-behavior: smooth; }
 
 /* ---------- Accessibility ---------- */
 
-.authors-page a:focus-visible {
+.authors-page a:focus-visible,
+.authors-page button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 4px;
   border-radius: 3px;
 }
+
+/* On the black Reborn card the default black outline would vanish. */
+.edition.is-featured a:focus-visible {
+  outline-color: var(--paper);
+}
+
+/* Sections receive programmatic focus after an in-page nav click;
+   don't draw an outline around a whole section for that. */
+.authors-page main :is(section, main)[tabindex="-1"]:focus { outline: none; }
+.authors-page main:focus { outline: none; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
@@ -769,5 +869,6 @@ html { scroll-behavior: smooth; }
   .authors-page *::after {
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
+    transition-delay: 0s !important;
   }
 }

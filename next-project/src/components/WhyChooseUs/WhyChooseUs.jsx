@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Image from "next/image";
 import { Bricolage_Grotesque, Plus_Jakarta_Sans } from "next/font/google";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -143,77 +142,55 @@ const APPROACH_ITEMS = [
   },
 ];
 
-const STORIES = [
+// Replaces the old STORIES (testimonial) data. Nothing here is a claim
+// about a third party — it's how the studio itself works — so there is
+// nothing to fake and nothing that needs a review/rating schema.
+//
+// IMPORTANT: edit this copy so it matches how you REALLY run projects.
+// This is the one place to keep it honest and specific (add timelines,
+// deliverables, tools, etc. only if they're true).
+const PROCESS_STEPS = [
   {
-    handle: "@Sarah Bennett",
-    role: "Founder, Bennett Studio",
-    quote:
-      "Working with ZARRAR changed how we think about our website. It's " +
-      "not just prettier now — it actually brings in leads every week.",
-    rating: 5,
-    photo: "https://picsum.photos/seed/zarrar-story-1/640/480",
+    title: "Discover",
+    desc:
+      "We start with your customers, your offer, and what a new lead is " +
+      "actually worth to your business.",
+    outcome: "A clear goal",
+    tint: "#CFE3FF",
   },
   {
-    handle: "@Marcus Webb",
-    role: "Marketing Lead, Webb & Co",
-    quote:
-      "The email flows they built paid for the whole project twice over " +
-      "inside the first quarter. Open rates have never been this consistent.",
-    rating: 5,
-    photo: "https://picsum.photos/seed/zarrar-story-2/640/480",
+    title: "Plan",
+    desc:
+      "The site, the lead funnel, and the email flow are mapped together, " +
+      "so nothing gets built in isolation.",
+    outcome: "One shared roadmap",
+    tint: "#FFDCA8",
   },
   {
-    handle: "@Priya Raman",
-    role: "Co-founder, Raman Interiors",
-    quote:
-      "Finally a team that gets design and marketing together. Our brand " +
-      "feels the same everywhere now — site, ads, and every email.",
-    rating: 5,
-    photo: "https://picsum.photos/seed/zarrar-story-3/640/480",
+    title: "Design",
+    desc:
+      "Layouts and brand assets that look premium and point every " +
+      "visitor toward one clear next action.",
+    outcome: "A consistent brand",
+    tint: "#D6F3D0",
   },
   {
-    handle: "@Daniel Osei",
-    role: "Operations Director, Osei Logistics",
-    quote:
-      "They didn't hand us a site and disappear. Six months in and we're " +
-      "still getting new lead-generation ideas from this team.",
-    rating: 4,
-    photo: "https://picsum.photos/seed/zarrar-story-4/640/480",
+    title: "Build",
+    desc:
+      "A custom Next.js site that loads fast on every device, with lead " +
+      "capture wired in from day one.",
+    outcome: "A fast, working site",
+    tint: "#F5D3E6",
   },
   {
-    handle: "@Elena Kowalski",
-    role: "Owner, Kowalski Bakehouse",
-    quote:
-      "Clean, fast, and it actually converts — that's rare. I'd recommend " +
-      "ZARRAR to any small business tired of pretty-but-useless websites.",
-    rating: 5,
-    photo: "https://picsum.photos/seed/zarrar-story-5/640/480",
+    title: "Grow",
+    desc:
+      "Email sequences and ongoing tuning so new contacts are nurtured " +
+      "and results keep improving.",
+    outcome: "Steady improvement",
+    tint: "#E1D9FF",
   },
 ];
-
-function StarIcon({ filled }) {
-  return (
-    <svg
-      viewBox="0 0 20 20"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth={filled ? 0 : 1.4}
-      strokeLinejoin="round"
-    >
-      <path d="M10 1.4l2.55 5.4 5.85.66-4.36 4.06 1.15 5.83L10 14.62l-5.19 2.73 1.15-5.83L1.6 7.46l5.85-.66z" />
-    </svg>
-  );
-}
-
-function StarRating({ rating, className }) {
-  return (
-    <span className={className} aria-hidden="true">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <StarIcon key={i} filled={i < rating} />
-      ))}
-    </span>
-  );
-}
 
 function ChevronIcon({ direction }) {
   const d = direction === "left" ? "M12.5 5l-6 6 6 6" : "M7.5 5l6 6-6 6";
@@ -261,11 +238,13 @@ const CONTACT_EMAIL = "isabella.web.devs@gmail.com";
 const SNAP_DURATION = 0.5;
 const SNAP_EASE = "power2.out";
 
-const STORIES_LOOP_DURATION = 14;
+// Slightly slower than the old testimonial loop — these cards carry a
+// bit more to read (title + sentence + outcome).
+const STEPS_LOOP_DURATION = 20;
 
-const CARD_STEP_DURATION = STORIES_LOOP_DURATION / STORIES.length;
+const CARD_STEP_DURATION = STEPS_LOOP_DURATION / PROCESS_STEPS.length;
 
-const STORIES_HOVER_TIMESCALE = 0;
+const STEPS_HOVER_TIMESCALE = 0;
 
 const STAGE1_LIGHT_VARS = {
   "--stage1-bg": "#ffffff",
@@ -292,11 +271,11 @@ export default function WhyChooseUs() {
   const heroRef = useRef(null);
   const kickerRef = useRef(null);
   const statementRef = useRef(null);
-  const storiesLabelRef = useRef(null);
-  const storiesViewportRef = useRef(null);
-  const storiesTrackRef = useRef(null);
-  const storiesCursorRef = useRef(null);
-  const storyItemRefs = useRef([]);
+  const stepsLabelRef = useRef(null);
+  const stepsViewportRef = useRef(null);
+  const stepsTrackRef = useRef(null);
+  const stepsCursorRef = useRef(null);
+  const stepItemRefs = useRef([]);
   const carouselTweenRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
   const [isContactOpen, setIsContactOpen] = useState(false);
@@ -371,16 +350,16 @@ export default function WhyChooseUs() {
         scrollTrigger: { trigger: statementRef.current, start: "top 85%" },
       });
 
-      gsap.from(storiesLabelRef.current, {
+      gsap.from(stepsLabelRef.current, {
         opacity: 0,
         y: 12,
         duration: 0.5,
         ease: "power3.out",
-        scrollTrigger: { trigger: storiesLabelRef.current, start: "top 92%" },
+        scrollTrigger: { trigger: stepsLabelRef.current, start: "top 92%" },
       });
 
       gsap.fromTo(
-        storyItemRefs.current,
+        stepItemRefs.current,
         { opacity: 0, y: 36, scale: 0.97, filter: "blur(6px)" },
         {
           opacity: 1,
@@ -390,7 +369,7 @@ export default function WhyChooseUs() {
           duration: 0.7,
           ease: "power3.out",
           stagger: 0.09,
-          scrollTrigger: { trigger: storiesTrackRef.current, start: "top 92%" },
+          scrollTrigger: { trigger: stepsTrackRef.current, start: "top 92%" },
         }
       );
 
@@ -534,8 +513,8 @@ export default function WhyChooseUs() {
   }, []);
 
   useEffect(() => {
-    const track = storiesTrackRef.current;
-    const viewport = storiesViewportRef.current;
+    const track = stepsTrackRef.current;
+    const viewport = stepsViewportRef.current;
     if (!track || !viewport) return;
 
     const prefersReducedMotion = window.matchMedia(
@@ -546,14 +525,14 @@ export default function WhyChooseUs() {
     const tween = gsap.to(track, {
       xPercent: -50,
       ease: "none",
-      duration: STORIES_LOOP_DURATION,
+      duration: STEPS_LOOP_DURATION,
       repeat: -1,
     });
     carouselTweenRef.current = tween;
 
     const stop = () => {
       if (tween.paused()) return;
-      gsap.to(tween, { timeScale: STORIES_HOVER_TIMESCALE, duration: 0.25, overwrite: true });
+      gsap.to(tween, { timeScale: STEPS_HOVER_TIMESCALE, duration: 0.25, overwrite: true });
     };
     const resume = () => {
       if (tween.paused()) return;
@@ -586,20 +565,20 @@ export default function WhyChooseUs() {
       });
     };
 
+    // Click the left/right half of the carousel to step back/forward.
+    // (The old "View photo" button guard is gone — cards no longer
+    // contain any interactive elements.)
     const handleClick = (event) => {
-      if (event.target.closest(`.${styles.storyPhotoTrigger}`)) return;
       const bounds = viewport.getBoundingClientRect();
       const clickedLeftHalf = event.clientX - bounds.left < bounds.width / 2;
       stepCarousel(clickedLeftHalf ? -1 : 1);
     };
     viewport.addEventListener("click", handleClick);
 
-    const cards = Array.from(track.querySelectorAll(`.${styles.storyCard}`));
+    const cards = Array.from(track.querySelectorAll(`.${styles.stepCard}`));
     cards.forEach((card) => {
       card.addEventListener("mouseenter", handleEnter);
       card.addEventListener("mouseleave", handleLeave);
-      card.addEventListener("focusin", handleEnter);
-      card.addEventListener("focusout", handleLeave);
     });
 
     tween.stepCarousel = stepCarousel;
@@ -609,8 +588,6 @@ export default function WhyChooseUs() {
       cards.forEach((card) => {
         card.removeEventListener("mouseenter", handleEnter);
         card.removeEventListener("mouseleave", handleLeave);
-        card.removeEventListener("focusin", handleEnter);
-        card.removeEventListener("focusout", handleLeave);
       });
       tween.kill();
       carouselTweenRef.current = null;
@@ -618,8 +595,8 @@ export default function WhyChooseUs() {
   }, []);
 
   useEffect(() => {
-    const viewport = storiesViewportRef.current;
-    const cursor = storiesCursorRef.current;
+    const viewport = stepsViewportRef.current;
+    const cursor = stepsCursorRef.current;
     if (!viewport || !cursor) return;
 
     let rafId = null;
@@ -684,6 +661,13 @@ export default function WhyChooseUs() {
     setIsPaused(nextPaused);
   };
 
+  // Service structured data only. The old Organization schema with
+  // aggregateRating + Review[] was generated from the placeholder
+  // testimonials, i.e. fabricated reviews — that's against Google's
+  // review-snippet guidelines and can trigger a manual action. It has
+  // been removed on purpose. Only add Review / AggregateRating markup
+  // back once it's built from REAL, verifiable reviews (and note Google
+  // ignores self-served reviews for an organization's own site anyway).
   const serviceSchema = {
     "@context": "https://schema.org",
     "@type": "Service",
@@ -703,122 +687,40 @@ export default function WhyChooseUs() {
     },
   };
 
-  // Built from the same STORIES testimonials rendered in the carousel
-  // above, so the structured data can never drift out of sync with what
-  // visitors actually see. This is what lets search engines show a star
-  // rating next to this page in results — a real SEO win the section
-  // didn't have before, and free once the ratings already exist as copy.
-  const averageRating = (
-    STORIES.reduce((sum, story) => sum + story.rating, 0) / STORIES.length
-  ).toFixed(1);
-
-  const organizationSchema = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "ZARRAR",
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: averageRating,
-      reviewCount: STORIES.length,
-    },
-    review: STORIES.map((story) => ({
-      "@type": "Review",
-      author: { "@type": "Person", name: story.handle.replace(/^@/, "") },
-      reviewRating: {
-        "@type": "Rating",
-        ratingValue: story.rating,
-        bestRating: 5,
-      },
-      reviewBody: story.quote,
-    })),
-  };
-
-  const renderStoryGroup = (duplicate) => (
+  const renderStepGroup = (duplicate) => (
     <div
-      className={styles.storiesTrackGroup}
+      className={styles.stepsTrackGroup}
       aria-hidden={duplicate ? "true" : undefined}
     >
-      {STORIES.map((story, i) => (
-        <article
-          key={story.handle}
-          ref={duplicate ? undefined : (el) => (storyItemRefs.current[i] = el)}
-          className={styles.storyCard}
-        >
-          <div className={styles.storyCardText}>
-            <svg
-              className={styles.storyQuoteMark}
-              viewBox="0 0 32 24"
-              fill="currentColor"
+      {PROCESS_STEPS.map((step, i) => {
+        // The duplicated group exists only for the seamless loop, so it
+        // must not add a second set of headings to the page outline.
+        const Title = duplicate ? "p" : "h3";
+        return (
+          <article
+            key={step.title}
+            ref={duplicate ? undefined : (el) => (stepItemRefs.current[i] = el)}
+            className={styles.stepCard}
+          >
+            <span
+              className={styles.stepNumber}
+              style={{ backgroundColor: step.tint }}
               aria-hidden="true"
             >
-              <path d="M4 24V15.2C4 8.4 8 3.2 14.8 0l2 4C12.4 6.8 10.4 10 10 13.6h6V24H4zm16 0V15.2C20 8.4 24 3.2 30.8 0l2 4c-4.4 2.8-6.4 6-6.8 9.6h6V24H20z" />
-            </svg>
+              {String(i + 1).padStart(2, "0")}
+            </span>
 
-            <div className={styles.storyCardHeading}>
-              <p className={styles.storyHandle}>{story.handle}</p>
-              <p className={styles.storyRole}>{story.role}</p>
+            <Title className={styles.stepTitle}>{step.title}</Title>
+
+            <p className={styles.stepDesc}>{step.desc}</p>
+
+            <div className={styles.stepOutcome}>
+              <span className={styles.stepOutcomeLabel}>You get</span>
+              <span className={styles.stepOutcomeValue}>{step.outcome}</span>
             </div>
-
-            <p className={styles.storyQuote}>{story.quote}</p>
-
-            <div className={styles.storyMeta}>
-              <span
-                className={styles.storyStars}
-                aria-label={`${story.rating} out of 5 stars`}
-              >
-                <StarRating rating={story.rating} />
-              </span>
-
-              <button
-                type="button"
-                className={styles.storyPhotoTrigger}
-                aria-label={`View photo shared by ${story.handle}`}
-                tabIndex={duplicate ? -1 : undefined}
-              >
-                View photo
-                <span className={styles.storyPhotoTriggerIcon} aria-hidden="true">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="12"
-                    height="12"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M9 6l6 6-6 6" />
-                  </svg>
-                </span>
-              </button>
-            </div>
-          </div>
-
-          <div
-            className={styles.storyCardPhoto}
-            role="img"
-            aria-label={`Photo shared by ${story.handle}`}
-          >
-            <div className={styles.storyCardPhotoMask} />
-            <div className={styles.storyCardPhotoImage}>
-              <Image
-                src={story.photo}
-                alt={`${story.handle.replace(/^@/, "")}, ${story.role} — client photo shared with their ZARRAR review`}
-                fill
-                sizes="(max-width: 860px) 80vw, 380px"
-                loading="lazy"
-              />
-            </div>
-            <div className={styles.storyCardPhotoCaption} aria-hidden="true">
-              <p className={styles.storyCardPhotoCaptionName}>{story.handle}</p>
-              <StarRating
-                rating={story.rating}
-                className={styles.storyCardPhotoCaptionStars}
-              />
-            </div>
-          </div>
-        </article>
-      ))}
+          </article>
+        );
+      })}
     </div>
   );
 
@@ -833,11 +735,6 @@ export default function WhyChooseUs() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(serviceSchema) }}
-      />
-      {/* eslint-disable-next-line react/no-danger */}
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
       />
 
       <div ref={stage1Ref} className={styles.stage1}>
@@ -871,24 +768,24 @@ export default function WhyChooseUs() {
             </h2>
           </div>
 
-          <div className={styles.storiesSection}>
-            <div className={styles.storiesHeader}>
-              <span ref={storiesLabelRef} className={styles.storiesLabel}>
-                Client stories
+          <div className={styles.stepsSection}>
+            <div className={styles.stepsHeader}>
+              <span ref={stepsLabelRef} className={styles.stepsLabel}>
+                How we work
               </span>
 
-              <div className={styles.storiesControls}>
+              <div className={styles.stepsControls}>
                 <button
                   type="button"
-                  className={styles.storiesControlButton}
+                  className={styles.stepsControlButton}
                   onClick={() => handleStep(-1)}
-                  aria-label="Show previous client story"
+                  aria-label="Show previous step"
                 >
                   <ChevronIcon direction="left" />
                 </button>
                 <button
                   type="button"
-                  className={styles.storiesControlButton}
+                  className={styles.stepsControlButton}
                   onClick={handleTogglePause}
                   aria-pressed={isPaused}
                   aria-label={isPaused ? "Resume auto-scroll" : "Pause auto-scroll"}
@@ -897,9 +794,9 @@ export default function WhyChooseUs() {
                 </button>
                 <button
                   type="button"
-                  className={styles.storiesControlButton}
+                  className={styles.stepsControlButton}
                   onClick={() => handleStep(1)}
-                  aria-label="Show next client story"
+                  aria-label="Show next step"
                 >
                   <ChevronIcon direction="right" />
                 </button>
@@ -907,20 +804,20 @@ export default function WhyChooseUs() {
             </div>
 
             <div
-              className={styles.storiesCarousel}
+              className={styles.stepsCarousel}
               role="region"
-              aria-label="Client stories"
+              aria-label="How we work"
             >
-              <div className={styles.storiesViewport} ref={storiesViewportRef}>
-                <div className={styles.storiesTrack} ref={storiesTrackRef}>
-                  {renderStoryGroup(false)}
-                  {renderStoryGroup(true)}
+              <div className={styles.stepsViewport} ref={stepsViewportRef}>
+                <div className={styles.stepsTrack} ref={stepsTrackRef}>
+                  {renderStepGroup(false)}
+                  {renderStepGroup(true)}
                 </div>
               </div>
 
               <div
-                ref={storiesCursorRef}
-                className={styles.storiesCursor}
+                ref={stepsCursorRef}
+                className={styles.stepsCursor}
                 aria-hidden="true"
               >
                 Next

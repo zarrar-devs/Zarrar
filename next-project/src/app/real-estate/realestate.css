@@ -2,6 +2,11 @@
    Zarrar — /for-real-estate-agents
    Fonts come from next/font in page.js, which sets the
    --font-archivo and --font-inter-tight variables on a wrapper.
+
+   Every selector below is scoped under .realestate-page, so this
+   file can't collide with the other persona pages' CSS (Next.js
+   CSS is global, and .btn / .hero / .plans / .service-card are
+   common class names).
    ========================================================= */
 
 .realestate-page {
@@ -9,7 +14,8 @@
   --ink: #101010;
   --ink-soft: #565144;
   --violet: #5b3df5;
-  --acid: #0d0c03;
+  /* was #0d0c03 (near-black): every "acid" surface was black-on-black */
+  --acid: #d8ff3e;
   --paper: #fffdf7;
   --rule: rgba(16, 16, 16, 0.13);
 
@@ -54,10 +60,10 @@
 /* nicer line breaks: no one-word last lines, balanced headings */
 .realestate-page p,
 .realestate-page li { text-wrap: pretty; }
-.hero-heading,
-.section-head h2,
-.closing h2,
-.faq-q span:first-child { text-wrap: balance; }
+.realestate-page .hero-heading,
+.realestate-page .section-head h2,
+.realestate-page .closing h2,
+.realestate-page .faq-q span:first-child { text-wrap: balance; }
 
 /* ---------- Smooth in-page scrolling (scoped to this page) ---------- */
 
@@ -85,36 +91,36 @@ html.lenis body { height: auto; }
 
 /* ---------- Display type ---------- */
 
-.hero-heading,
-.section-head h2,
-.service-card-body h3,
-.case-step h3,
-.plan-name,
-.closing h2,
-.logo {
+.realestate-page .hero-heading,
+.realestate-page .section-head h2,
+.realestate-page .service-card-body h3,
+.realestate-page .case-step h3,
+.realestate-page .plan-name,
+.realestate-page .closing h2,
+.realestate-page .logo {
   font-family: var(--f-display);
   font-weight: 900;
   text-transform: uppercase;
   margin: 0;
 }
 
-.section-head h2,
-.service-card-body h3,
-.case-step h3,
-.plan-name,
-.closing h2 { transform-style: preserve-3d; }
+.realestate-page .section-head h2,
+.realestate-page .service-card-body h3,
+.realestate-page .case-step h3,
+.realestate-page .plan-name,
+.realestate-page .closing h2 { transform-style: preserve-3d; }
 
 /* ---------- Layout shells ---------- */
 
-.shell,
-.hero,
-.section-head,
-.compare-grid,
-.services-grid,
-.case-steps,
-.case-note,
-.plans-grid,
-.faq-list {
+.realestate-page .shell,
+.realestate-page .hero,
+.realestate-page .section-head,
+.realestate-page .compare-grid,
+.realestate-page .services-grid,
+.realestate-page .case-steps,
+.realestate-page .case-note,
+.realestate-page .plans-grid,
+.realestate-page .faq-list {
   max-width: var(--maxw);
   margin-inline: auto;
   padding-inline: var(--gut);
@@ -122,7 +128,7 @@ html.lenis body { height: auto; }
 
 /* ---------- Skip link ---------- */
 
-.skip-link {
+.realestate-page .skip-link {
   position: fixed;
   top: -5rem;
   left: var(--edge);
@@ -136,11 +142,11 @@ html.lenis body { height: auto; }
   font-size: 0.9rem;
   transition: top 0.2s ease;
 }
-.skip-link:focus-visible { top: 0.75rem; }
+.realestate-page .skip-link:focus-visible { top: 0.75rem; }
 
 /* ---------- Buttons ---------- */
 
-.btn {
+.realestate-page .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -154,25 +160,26 @@ html.lenis body { height: auto; }
   transition: background 0.35s ease, color 0.35s ease, border-color 0.35s ease;
 }
 
-.btn-solid { background: var(--ink); color: var(--paper); }
-.btn-solid:hover, .btn-solid:focus-visible { background: var(--violet); }
+.realestate-page .btn-solid { background: var(--ink); color: var(--paper); }
+.realestate-page .btn-solid:hover, .realestate-page .btn-solid:focus-visible { background: var(--violet); }
 
-.btn-outline { border: 1px solid var(--rule); color: var(--ink); background: transparent; }
-.btn-outline:hover, .btn-outline:focus-visible {
+.realestate-page .btn-outline { border: 1px solid var(--rule); color: var(--ink); background: transparent; }
+.realestate-page .btn-outline:hover, .realestate-page .btn-outline:focus-visible {
   background: var(--ink); color: var(--paper); border-color: var(--ink);
 }
 
-.btn-ghost { color: var(--ink-soft); padding-inline: 0.75rem; }
-.btn-ghost:hover, .btn-ghost:focus-visible { color: var(--violet); }
+.realestate-page .btn-ghost { color: var(--ink-soft); padding-inline: 0.75rem; }
+.realestate-page .btn-ghost:hover, .realestate-page .btn-ghost:focus-visible { color: var(--violet); }
 
-.btn-acid { background: var(--acid); color: var(--ink); }
-.btn-acid:hover, .btn-acid:focus-visible { background: var(--paper); }
+/* lime button for the dark featured card */
+.realestate-page .btn-acid { background: var(--acid); color: var(--ink); }
+.realestate-page .btn-acid:hover, .realestate-page .btn-acid:focus-visible { background: var(--paper); }
 
-.btn-lg { font-size: 1rem; min-height: 54px; padding: 0.95rem 2.4rem; }
+.realestate-page .btn-lg { font-size: 1rem; min-height: 54px; padding: 0.95rem 2.4rem; }
 
 /* ---------- Nav ---------- */
 
-.nav {
+.realestate-page .nav {
   position: sticky;
   top: 0;
   z-index: 20;
@@ -186,7 +193,7 @@ html.lenis body { height: auto; }
   backdrop-filter: blur(10px);
 }
 
-.logo {
+.realestate-page .logo {
   font-variation-settings: 'wdth' 88, 'wght' 900;
   font-size: 1.05rem;
   letter-spacing: -0.035em;
@@ -195,9 +202,9 @@ html.lenis body { height: auto; }
   flex: none;
 }
 
-.nav-links { display: flex; gap: clamp(0.85rem, 2.4vw, 2rem); }
+.realestate-page .nav-links { display: flex; gap: clamp(0.85rem, 2.4vw, 2rem); }
 
-.nav-links a {
+.realestate-page .nav-links a {
   position: relative;
   color: var(--ink);
   text-decoration: none;
@@ -206,7 +213,7 @@ html.lenis body { height: auto; }
   padding-block: 0.4rem;
   white-space: nowrap;
 }
-.nav-links a::after {
+.realestate-page .nav-links a::after {
   content: '';
   position: absolute;
   inset: auto 0 0.15rem 0;
@@ -216,12 +223,12 @@ html.lenis body { height: auto; }
   transform-origin: right;
   transition: transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.nav-links a:hover::after,
-.nav-links a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
+.realestate-page .nav-links a:hover::after,
+.realestate-page .nav-links a:focus-visible::after { transform: scaleX(1); transform-origin: left; }
 
-.nav-end { display: flex; align-items: center; gap: 0.5rem; flex: none; }
+.realestate-page .nav-end { display: flex; align-items: center; gap: 0.5rem; flex: none; }
 
-.nav-cta {
+.realestate-page .nav-cta {
   display: inline-flex;
   align-items: center;
   min-height: 40px;
@@ -235,10 +242,10 @@ html.lenis body { height: auto; }
   white-space: nowrap;
   transition: background 0.35s ease;
 }
-.nav-cta:hover, .nav-cta:focus-visible { background: var(--violet); }
+.realestate-page .nav-cta:hover, .realestate-page .nav-cta:focus-visible { background: var(--violet); }
 
 /* burger: only exists on small screens */
-.nav-toggle {
+.realestate-page .nav-toggle {
   display: none;
   position: relative;
   width: 44px;
@@ -250,7 +257,7 @@ html.lenis body { height: auto; }
   color: var(--ink);
   cursor: pointer;
 }
-.nav-toggle span {
+.realestate-page .nav-toggle span {
   position: absolute;
   top: calc(50% - 1px);
   left: 50%;
@@ -260,19 +267,19 @@ html.lenis body { height: auto; }
   background: currentColor;
   transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.nav-toggle span:first-child { transform: translate(-50%, -4px); }
-.nav-toggle span:last-child { transform: translate(-50%, 4px); }
-.nav-toggle[aria-expanded='true'] span:first-child { transform: translate(-50%, 0) rotate(45deg); }
-.nav-toggle[aria-expanded='true'] span:last-child { transform: translate(-50%, 0) rotate(-45deg); }
-.nav-toggle:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
+.realestate-page .nav-toggle span:first-child { transform: translate(-50%, -4px); }
+.realestate-page .nav-toggle span:last-child { transform: translate(-50%, 4px); }
+.realestate-page .nav-toggle[aria-expanded='true'] span:first-child { transform: translate(-50%, 0) rotate(45deg); }
+.realestate-page .nav-toggle[aria-expanded='true'] span:last-child { transform: translate(-50%, 0) rotate(-45deg); }
+.realestate-page .nav-toggle:focus-visible { outline: 2px solid var(--violet); outline-offset: 3px; }
 
-.nav-progress {
+.realestate-page .nav-progress {
   position: absolute;
   inset: auto 0 0 0;
   height: 2px;
   background: var(--rule);
 }
-.nav-progress span {
+.realestate-page .nav-progress span {
   display: block;
   height: 100%;
   background: var(--violet);
@@ -282,9 +289,9 @@ html.lenis body { height: auto; }
 
 /* below 720px the links become a dropdown under the bar */
 @media (max-width: 719px) {
-  .nav-toggle { display: inline-flex; }
+  .realestate-page .nav-toggle { display: inline-flex; }
 
-  .nav-links {
+  .realestate-page .nav-links {
     position: absolute;
     top: 100%;
     left: 0;
@@ -299,31 +306,29 @@ html.lenis body { height: auto; }
     transform: translateY(-8px);
     transition: opacity 0.3s ease, transform 0.3s ease, visibility 0s linear 0.3s;
   }
-  .nav-links.is-open {
+  .realestate-page .nav-links.is-open {
     visibility: visible;
     opacity: 1;
     transform: none;
     transition-delay: 0s;
   }
 
-  .nav-links a {
+  .realestate-page .nav-links a {
     font-size: 1.05rem;
     padding-block: 0.95rem;
     border-bottom: 1px solid var(--rule);
   }
-  .nav-links a:last-child { border-bottom: 0; }
-  .nav-links a::after { display: none; }
+  .realestate-page .nav-links a:last-child { border-bottom: 0; }
+  .realestate-page .nav-links a::after { display: none; }
 }
 
 /* ---------- Hero ---------- */
 
 /* Only block padding here. Inline padding comes from the shared shell rule,
-   so the hero's left edge is exactly the same as every section below it.
-   (The old shorthand also left a full --block of empty space under the hero,
-   stacked on top of the next section's own padding.) */
-.hero { padding-block: clamp(2.5rem, 8vw, 5.5rem) clamp(3rem, 7vw, 5rem); }
+   so the hero's left edge is exactly the same as every section below it. */
+.realestate-page .hero { padding-block: clamp(2.5rem, 8vw, 5.5rem) clamp(3rem, 7vw, 5rem); }
 
-.hero-eyebrow {
+.realestate-page .hero-eyebrow {
   margin: 0 0 clamp(1rem, 2.4vw, 1.6rem);
   color: var(--violet);
   font-weight: 600;
@@ -332,7 +337,7 @@ html.lenis body { height: auto; }
 
 /* Flowing heading: balance evens the line lengths so it never ends on a
    lonely "listings." or breaks mid-phrase at odd widths. */
-.hero-heading {
+.realestate-page .hero-heading {
   font-variation-settings: 'wdth' 106, 'wght' 900;
   font-size: clamp(2.1rem, 7.5vw, 5.5rem);
   line-height: 0.98;
@@ -344,9 +349,9 @@ html.lenis body { height: auto; }
   margin-bottom: clamp(1.6rem, 4vw, 2.5rem);
 }
 
-.hero-heading .accent { color: var(--violet); }
+.realestate-page .hero-heading .accent { color: var(--violet); }
 
-.hero-rule {
+.realestate-page .hero-rule {
   height: 1px;
   background: var(--ink);
   opacity: 0.18;
@@ -355,16 +360,18 @@ html.lenis body { height: auto; }
   margin-bottom: clamp(1.4rem, 3.5vw, 2.25rem);
 }
 
-.hero-foot { display: grid; gap: clamp(1.6rem, 4vw, 3rem); align-items: start; }
+.realestate-page .hero-foot { display: grid; gap: clamp(1.6rem, 4vw, 3rem); align-items: start; }
 
 @media (min-width: 880px) {
-  .hero-foot {
+  .realestate-page .hero-foot {
     grid-template-columns: minmax(0, 52ch) minmax(0, auto);
     justify-content: space-between;
+    /* buttons sit level with the middle of the paragraph, not its first line */
+    align-items: center;
   }
 }
 
-.hero-sub {
+.realestate-page .hero-sub {
   margin: 0;
   font-size: clamp(1.05rem, 1rem + 0.4vw, 1.3rem);
   line-height: 1.45;
@@ -372,25 +379,31 @@ html.lenis body { height: auto; }
   max-width: 52ch;
 }
 
-.hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+.realestate-page .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 0.6rem; }
+
+/* the ghost link's text ends flush with the right edge of the hero rule */
+.realestate-page .hero-actions .btn-ghost:last-child { padding-inline-end: 0; }
 
 @media (max-width: 479px) {
-  /* thumb-friendly: primary action takes the full row */
-  .hero-actions .btn-solid { flex: 1 1 100%; }
+  /* thumb-friendly: primary action takes the full row, and the ghost link
+     sits centred under it instead of floating 12px in from the left edge */
+  .realestate-page .hero-actions .btn-solid { flex: 1 1 100%; }
+  .realestate-page .hero-actions .btn-ghost:last-child { flex: 1 1 100%; padding-inline: 0; }
 }
 
-/* search-terms strip: a label plus a wrapping row of chips. The label
-   drops onto its own line on narrow screens instead of squeezing the chips. */
-.area-chips {
+/* search-terms strip: the label sits on its own line, left-aligned with the
+   hero text, and the chips wrap underneath it. (Side by side, the label
+   floated in the middle of two chip rows and pushed the chips off the
+   left edge.) */
+.realestate-page .area-chips {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.7rem 1rem;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.8rem;
   margin-top: clamp(1.75rem, 3.5vw, 2.5rem);
 }
 
-.area-chips-label {
-  flex: none;
+.realestate-page .area-chips-label {
   margin: 0;
   font-size: 0.78rem;
   font-weight: 600;
@@ -399,9 +412,9 @@ html.lenis body { height: auto; }
   color: var(--ink-soft);
 }
 
-.area-chips-list {
-  flex: 1 1 18rem;
+.realestate-page .area-chips-list {
   min-width: 0;
+  max-width: 100%;
   list-style: none;
   margin: 0;
   padding: 0;
@@ -411,7 +424,7 @@ html.lenis body { height: auto; }
 }
 
 /* not links, so no hover state: they shouldn't look clickable */
-.area-chip {
+.realestate-page .area-chip {
   display: inline-flex;
   align-items: center;
   max-width: 100%;
@@ -427,9 +440,9 @@ html.lenis body { height: auto; }
 
 /* ---------- Section heads ---------- */
 
-.section-head { margin-bottom: clamp(2.25rem, 5.5vw, 3.75rem); }
+.realestate-page .section-head { margin-bottom: clamp(2.25rem, 5.5vw, 3.75rem); }
 
-.section-head h2 {
+.realestate-page .section-head h2 {
   font-variation-settings: 'wdth' 104, 'wght' 900;
   font-size: clamp(1.85rem, 5.4vw, 4rem);
   line-height: 0.92;
@@ -437,7 +450,7 @@ html.lenis body { height: auto; }
   margin-bottom: 0.6rem;
 }
 
-.section-head p {
+.realestate-page .section-head p {
   margin: 0;
   color: var(--ink-soft);
   font-size: clamp(1rem, 0.96rem + 0.25vw, 1.14rem);
@@ -446,33 +459,33 @@ html.lenis body { height: auto; }
 
 /* ---------- Compare (portal vs owned) ---------- */
 
-.compare { border-top: 1px solid var(--rule); padding-block: var(--block); }
+.realestate-page .compare { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
-.compare-grid {
+.realestate-page .compare-grid {
   display: grid;
   gap: clamp(1rem, 2.4vw, 1.75rem);
   grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 760px) {
-  .compare-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .realestate-page .compare-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-.compare-col {
+.realestate-page .compare-col {
   border: 1px solid var(--rule);
   border-radius: 10px;
   padding: clamp(1.6rem, 3vw, 2.3rem);
   background: var(--paper);
 }
 
-.compare-col-highlight {
+.realestate-page .compare-col-highlight {
   background: var(--ink);
   color: var(--paper);
   border-color: var(--ink);
 }
 
 /* an <h3> for document outline, styled as a pill */
-.compare-tag {
+.realestate-page .compare-tag {
   display: inline-block;
   margin: 0 0 1.15rem;
   font-family: var(--f-display);
@@ -485,10 +498,10 @@ html.lenis body { height: auto; }
   padding: 0.3rem 0.75rem;
   border-radius: 999px;
 }
-.compare-tag-old { background: var(--bone); color: var(--ink-soft); }
-.compare-tag-new { background: var(--acid); color: var(--ink); }
+.realestate-page .compare-tag-old { background: var(--bone); color: var(--ink-soft); }
+.realestate-page .compare-tag-new { background: var(--acid); color: var(--ink); }
 
-.compare-col ul {
+.realestate-page .compare-col ul {
   list-style: none;
   margin: 0;
   padding: 0;
@@ -497,16 +510,16 @@ html.lenis body { height: auto; }
   gap: 0.9rem;
 }
 
-.compare-col li {
+.realestate-page .compare-col li {
   position: relative;
   padding-left: 1.3rem;
   font-size: 0.98rem;
   line-height: 1.5;
   color: var(--ink-soft);
 }
-.compare-col-highlight li { color: rgba(255, 253, 247, 0.82); }
+.realestate-page .compare-col-highlight li { color: rgba(255, 253, 247, 0.82); }
 
-.compare-col li::before {
+.realestate-page .compare-col li::before {
   content: '';
   position: absolute;
   left: 0;
@@ -517,26 +530,28 @@ html.lenis body { height: auto; }
   transform: rotate(45deg);
   background: var(--violet);
 }
-.compare-col-highlight li::before { background: var(--acid); }
+.realestate-page .compare-col-highlight li::before { background: var(--acid); }
 
 /* ---------- Services (4, horizontal icon-left cards) ---------- */
 
-.services { border-top: 1px solid var(--rule); padding-block: var(--block); }
+.realestate-page .services { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
-.services-grid {
+.realestate-page .services-grid {
   display: grid;
   gap: clamp(1rem, 2.4vw, 1.5rem);
   grid-template-columns: minmax(0, 1fr);
 }
 
 @media (min-width: 700px) {
-  .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .realestate-page .services-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
-.service-card {
+.realestate-page .service-card {
   display: flex;
   flex-direction: row;
-  align-items: flex-start;
+  /* stretch (not flex-start) so the body fills the card and its button can
+     sit on the bottom edge, level with the button in the next card */
+  align-items: stretch;
   gap: 1.15rem;
   background: var(--paper);
   border: 1px solid var(--rule);
@@ -546,39 +561,47 @@ html.lenis body { height: auto; }
 }
 
 @media (max-width: 480px) {
-  .service-card { flex-direction: column; }
+  .realestate-page .service-card { flex-direction: column; }
+}
+
+/* two narrow columns (700-959px): the icon-left layout squeezes the text, so
+   long button labels wrap and the buttons stop matching. Stack instead. */
+@media (min-width: 700px) and (max-width: 959px) {
+  .realestate-page .service-card { flex-direction: column; }
 }
 
 @media (hover: hover) {
-  .service-card:hover { border-color: var(--ink); transform: translateY(-4px); }
+  .realestate-page .service-card:hover { border-color: var(--ink); transform: translateY(-4px); }
 }
 
-.service-icon { flex: none; width: 52px; height: 52px; color: var(--violet); }
-.service-icon svg { width: 100%; height: 100%; overflow: visible; }
+.realestate-page .service-icon { flex: none; align-self: flex-start; width: 52px; height: 52px; color: var(--violet); }
+.realestate-page .service-icon svg { width: 100%; height: 100%; overflow: visible; }
 
-.service-card-body { display: flex; flex-direction: column; gap: 0.65rem; min-width: 0; }
+.realestate-page .service-card-body { display: flex; flex: 1; flex-direction: column; gap: 0.65rem; min-width: 0; }
 
-.service-card-body h3 {
+.realestate-page .service-card-body h3 {
   font-variation-settings: 'wdth' 98, 'wght' 900;
   font-size: clamp(1.1rem, 1.8vw, 1.4rem);
   line-height: 1.05;
   letter-spacing: -0.03em;
 }
 
-.service-card-body p {
+.realestate-page .service-card-body p {
+  /* takes the spare height, which pushes the button to the card's bottom */
+  flex: 1 0 auto;
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.97rem;
   line-height: 1.55;
 }
 
-.service-card-body .btn { align-self: flex-start; margin-top: 0.2rem; }
+.realestate-page .service-card-body .btn { align-self: flex-start; margin-top: 0.2rem; }
 
 /* ---------- Timeline ---------- */
 
-.case-study { border-top: 1px solid var(--rule); padding-block: var(--block); }
+.realestate-page .case-study { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
-.case-steps {
+.realestate-page .case-steps {
   list-style: none;
   margin-block: 0;
   display: grid;
@@ -587,10 +610,10 @@ html.lenis body { height: auto; }
 }
 
 @media (min-width: 820px) {
-  .case-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .realestate-page .case-steps { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.case-step {
+.realestate-page .case-step {
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -600,7 +623,7 @@ html.lenis body { height: auto; }
   padding: clamp(1.5rem, 3vw, 2.1rem);
 }
 
-.case-step-num {
+.realestate-page .case-step-num {
   font-family: var(--f-display);
   font-variation-settings: 'wdth' 92, 'wght' 800;
   color: var(--violet);
@@ -609,20 +632,20 @@ html.lenis body { height: auto; }
   font-size: 0.9rem;
 }
 
-.case-step h3 {
+.realestate-page .case-step h3 {
   font-variation-settings: 'wdth' 98, 'wght' 900;
   font-size: clamp(1.05rem, 1.8vw, 1.35rem);
   letter-spacing: -0.03em;
 }
 
-.case-step p {
+.realestate-page .case-step p {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.97rem;
   line-height: 1.5;
 }
 
-.case-note {
+.realestate-page .case-note {
   margin-top: clamp(1.5rem, 3vw, 2rem);
   margin-bottom: 0;
   color: var(--ink-soft);
@@ -632,9 +655,9 @@ html.lenis body { height: auto; }
 
 /* ---------- Plans ---------- */
 
-.plans { border-top: 1px solid var(--rule); padding-block: var(--block); }
+.realestate-page .plans { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
-.plans-grid {
+.realestate-page .plans-grid {
   display: grid;
   gap: clamp(1.4rem, 2.4vw, 1.75rem); /* a little extra room for the badge that overhangs a card */
   grid-template-columns: minmax(0, 1fr);
@@ -643,10 +666,10 @@ html.lenis body { height: auto; }
 
 /* one column until there is genuinely room for three */
 @media (min-width: 960px) {
-  .plans-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .realestate-page .plans-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 
-.plan {
+.realestate-page .plan {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -657,11 +680,27 @@ html.lenis body { height: auto; }
   padding: clamp(1.6rem, 3vw, 2.5rem);
 }
 
-.plan.is-featured { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+/* Three across: let the cards share row tracks (subgrid) so the tagline,
+   description, feature list and button line up across all three cards even
+   when one description wraps to an extra line. Without subgrid support the
+   flex layout above still works, just unaligned. */
+@supports (grid-template-rows: subgrid) {
+  @media (min-width: 960px) {
+    .realestate-page .plans-grid { row-gap: 0; }
+    .realestate-page .plan {
+      display: grid;
+      grid-row: span 5; /* name, tagline, description, features, button */
+      grid-template-rows: subgrid;
+      row-gap: 0.65rem;
+    }
+  }
+}
+
+.realestate-page .plan.is-featured { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
 /* badge straddles the card's top border, so it can never collide with the
    plan name at any width */
-.plan-flag {
+.realestate-page .plan-flag {
   position: absolute;
   top: 0;
   right: clamp(1rem, 2.2vw, 1.6rem);
@@ -676,7 +715,7 @@ html.lenis body { height: auto; }
   white-space: nowrap;
 }
 
-.plan-name {
+.realestate-page .plan-name {
   font-variation-settings: 'wdth' 100, 'wght' 900;
   font-size: clamp(1.65rem, 3.2vw, 2.5rem);
   line-height: 0.95;
@@ -684,31 +723,31 @@ html.lenis body { height: auto; }
   white-space: nowrap;
 }
 
-.plan-line { margin: 0; color: var(--violet); font-weight: 600; font-size: 0.99rem; }
-.plan.is-featured .plan-line { color: var(--acid); }
+.realestate-page .plan-line { margin: 0; color: var(--violet); font-weight: 600; font-size: 0.99rem; }
+.realestate-page .plan.is-featured .plan-line { color: var(--acid); }
 
-.plan-body { margin: 0; color: var(--ink-soft); font-size: 0.98rem; }
-.plan.is-featured .plan-body { color: rgba(255, 253, 247, 0.72); }
+.realestate-page .plan-body { margin: 0; color: var(--ink-soft); font-size: 0.98rem; }
+.realestate-page .plan.is-featured .plan-body { color: rgba(255, 253, 247, 0.72); }
 
-.plan-includes {
+.realestate-page .plan-includes {
   list-style: none;
   margin: 0.5rem 0 1.4rem;
   padding: 0;
   border-top: 1px solid var(--rule);
   flex: 1;
 }
-.plan.is-featured .plan-includes { border-color: rgba(255, 253, 247, 0.18); }
+.realestate-page .plan.is-featured .plan-includes { border-color: rgba(255, 253, 247, 0.18); }
 
-.plan-includes li {
+.realestate-page .plan-includes li {
   position: relative;
   padding: 0.72rem 0 0.72rem 1.5rem;
   border-bottom: 1px solid var(--rule);
   font-size: 0.95rem;
   line-height: 1.45;
 }
-.plan.is-featured .plan-includes li { border-color: rgba(255, 253, 247, 0.18); }
+.realestate-page .plan.is-featured .plan-includes li { border-color: rgba(255, 253, 247, 0.18); }
 
-.plan-includes li::before {
+.realestate-page .plan-includes li::before {
   content: '';
   position: absolute;
   left: 0;
@@ -719,21 +758,21 @@ html.lenis body { height: auto; }
   border-radius: 1px;
   transform: rotate(45deg);
 }
-.plan.is-featured .plan-includes li::before { background: var(--acid); }
+.realestate-page .plan.is-featured .plan-includes li::before { background: var(--acid); }
 
-.plan .btn { align-self: stretch; }
-.plan.is-featured .btn-outline { border-color: rgba(255, 253, 247, 0.3); color: var(--paper); }
+.realestate-page .plan .btn { align-self: stretch; }
+.realestate-page .plan.is-featured .btn-outline { border-color: rgba(255, 253, 247, 0.3); color: var(--paper); }
 
 /* ---------- FAQ ---------- */
 
-.faq { border-top: 1px solid var(--rule); padding-block: var(--block); }
+.realestate-page .faq { border-top: 1px solid var(--rule); padding-block: var(--block); }
 
-.faq-item { border-top: 1px solid var(--rule); }
-.faq-item:last-child { border-bottom: 1px solid var(--rule); }
+.realestate-page .faq-item { border-top: 1px solid var(--rule); }
+.realestate-page .faq-item:last-child { border-bottom: 1px solid var(--rule); }
 
-.faq-heading { margin: 0; font: inherit; }
+.realestate-page .faq-heading { margin: 0; font: inherit; }
 
-.faq-q {
+.realestate-page .faq-q {
   width: 100%;
   min-height: 48px;
   display: flex;
@@ -751,14 +790,14 @@ html.lenis body { height: auto; }
   font-weight: 600;
   font-size: clamp(1rem, 0.97rem + 0.25vw, 1.18rem);
 }
-.faq-q:focus-visible {
+.realestate-page .faq-q:focus-visible {
   outline: 2px solid var(--violet);
   outline-offset: 4px;
   border-radius: 3px;
 }
 
-.faq-icon { flex: none; width: 22px; height: 22px; color: var(--violet); }
-.faq-icon svg {
+.realestate-page .faq-icon { flex: none; width: 22px; height: 22px; color: var(--violet); }
+.realestate-page .faq-icon svg {
   width: 100%;
   height: 100%;
   stroke: currentColor;
@@ -766,28 +805,28 @@ html.lenis body { height: auto; }
   stroke-linecap: round;
   transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.faq-item.is-open .faq-icon svg { transform: rotate(45deg); }
+.realestate-page .faq-item.is-open .faq-icon svg { transform: rotate(45deg); }
 
-.faq-a {
+.realestate-page .faq-a {
   display: grid;
   grid-template-rows: 0fr;
   transition: grid-template-rows 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.faq-item.is-open .faq-a { grid-template-rows: 1fr; }
+.realestate-page .faq-item.is-open .faq-a { grid-template-rows: 1fr; }
 
 /* collapsed answers stay in the DOM (crawlable) but are hidden from AT */
-.faq-a-inner {
+.realestate-page .faq-a-inner {
   min-height: 0;
   overflow: hidden;
   visibility: hidden;
   transition: visibility 0s linear 0.45s;
 }
-.faq-item.is-open .faq-a-inner {
+.realestate-page .faq-item.is-open .faq-a-inner {
   visibility: visible;
   transition-delay: 0s;
 }
 
-.faq-a p {
+.realestate-page .faq-a p {
   margin: 0 0 clamp(1.1rem, 2.6vw, 1.5rem);
   color: var(--ink-soft);
   font-size: 0.99rem;
@@ -797,7 +836,7 @@ html.lenis body { height: auto; }
 
 /* ---------- Closing ---------- */
 
-.closing {
+.realestate-page .closing {
   border-top: 1px solid var(--rule);
   padding: var(--block) var(--gut);
   display: flex;
@@ -807,7 +846,7 @@ html.lenis body { height: auto; }
   text-align: center;
 }
 
-.closing h2 {
+.realestate-page .closing h2 {
   font-variation-settings: 'wdth' 106, 'wght' 900;
   font-size: clamp(1.9rem, 6vw, 4.6rem);
   line-height: 0.9;
@@ -816,13 +855,13 @@ html.lenis body { height: auto; }
 }
 
 @media (max-width: 479px) {
-  .closing .btn-lg { width: 100%; max-width: 26rem; padding-inline: 1.25rem; }
+  .realestate-page .closing .btn-lg { width: 100%; max-width: 26rem; padding-inline: 1.25rem; }
 }
 
-.closing-alt { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
-.closing-alt a { color: var(--violet); text-decoration: underline; text-underline-offset: 3px; }
-.closing-alt a:hover,
-.closing-alt a:focus-visible { color: var(--ink); }
+.realestate-page .closing-alt { margin: 0; color: var(--ink-soft); font-size: 0.95rem; }
+.realestate-page .closing-alt a { color: var(--violet); text-decoration: underline; text-underline-offset: 3px; }
+.realestate-page .closing-alt a:hover,
+.realestate-page .closing-alt a:focus-visible { color: var(--ink); }
 
 /* ---------- Accessibility ---------- */
 
@@ -831,11 +870,12 @@ html.lenis body { height: auto; }
   outline-offset: 4px;
   border-radius: 3px;
 }
-.btn:focus-visible,
-.nav-cta:focus-visible { border-radius: 999px; }
+/* keep the pill shape while focused (scoping makes this outrank the rule above) */
+.realestate-page .btn:focus-visible,
+.realestate-page .nav-cta:focus-visible { border-radius: 999px; }
 
 /* violet outline is too faint on the dark featured card */
-.plan.is-featured a:focus-visible { outline-color: var(--acid); }
+.realestate-page .plan.is-featured a:focus-visible { outline-color: var(--acid); }
 
 @media (prefers-reduced-motion: reduce) {
   html:has(.realestate-page) { scroll-behavior: auto; }
@@ -845,5 +885,5 @@ html.lenis body { height: auto; }
     animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
   }
-  .hero-rule { transform: scaleX(1); }
+  .realestate-page .hero-rule { transform: scaleX(1); }
 }

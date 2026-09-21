@@ -262,7 +262,7 @@ export const PLANS = [
   },
   {
     id: "growth",
-    name: "Growth",
+    name: "Reborn",
     line: "For bringing in clients.",
     body: "The full engine. We build the presence, then go and get the work.",
     includes: [

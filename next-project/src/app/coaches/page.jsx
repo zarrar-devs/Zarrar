@@ -444,7 +444,7 @@ function Breadcrumb() {
 function OtherPersonas() {
   const live = PERSONAS.filter((p) => p.live);
   if (live.length === 0) {
-    return <Link href="/#who">See who else we work with</Link>;
+    return <Link href="/services">See who else we work with</Link>;
   }
   return (
     <>
@@ -478,7 +478,7 @@ export default function ForCoachesPage() {
           <a href="#plans">PLANS</a>
           <a href="#faq">FAQ</a>
         </nav>
-        <a className="nav-cta magnetic" href="#contact">Book a call</a>
+        <a className="nav-cta magnetic" href="#contact">Contact</a>
         <div className="nav-progress" aria-hidden="true"><span /></div>
       </header>
 
@@ -623,7 +623,7 @@ export default function ForCoachesPage() {
             Tell us about your coaching business and we&apos;ll recommend where to start.
           </p>
           <a className="btn btn-solid btn-lg magnetic" href={CONTACT_HREF}>
-            Book a call
+            SAY HELLO
           </a>
           <p className="closing-alt">
             Not a coach? <OtherPersonas />

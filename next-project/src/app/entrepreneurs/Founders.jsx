@@ -66,10 +66,10 @@ const useIsoLayoutEffect =
 /* Section ids the nav points at. Used for the desktop links, the
    mobile menu and the "you are here" highlight. */
 const NAV_LINKS = [
-  { id: "problem", label: "Why it matters" },
-  { id: "services", label: "Services" },
-  { id: "process", label: "Process" },
-  { id: "plans", label: "Plans" },
+  { id: "problem", label: "WHY IT MATTERS" },
+  { id: "services", label: "SERVICES" },
+  { id: "process", label: "PROCESS" },
+  { id: "plans", label: "PLANS" },
   { id: "faq", label: "FAQ" },
 ];
 
@@ -405,7 +405,7 @@ function Founders() {
             </nav>
 
             <div className="fd-nav-actions">
-              <a className="fd-nav-cta" href="#contact">Book a call</a>
+              <a className="fd-nav-cta" href="#contact">CONTACT</a>
               <button
                 ref={burgerRef}
                 type="button"
@@ -455,7 +455,7 @@ function Founders() {
               </h1>
               <p className="fd-hero-sub">{HERO.sub}</p>
               <div className="fd-hero-actions">
-                <a className="fd-btn" href="#contact">Book a call</a>
+                <a className="fd-btn" href="#contact">SAY HELLO</a>
                 <a className="fd-link" href="#plans">See the plans</a>
               </div>
             </div>

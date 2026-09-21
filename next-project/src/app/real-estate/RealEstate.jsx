@@ -528,7 +528,7 @@ function RealEstate() {
 
         <div className="nav-end">
           <a className="nav-cta magnetic" href="#contact">
-            Book a call
+            Contact
           </a>
           <button
             type="button"
@@ -750,10 +750,10 @@ function RealEstate() {
             className="btn btn-solid btn-lg magnetic"
             href={`mailto:${CONTACT_EMAIL}?subject=Real%20estate%20website%20and%20lead%20generation%20enquiry`}
           >
-            Email us to book a call
+            Email us
           </a>
           <p className="closing-alt">
-            Not an agent? <Link href="/#who">See who else we work with</Link>
+            Not an agent? <Link href="/services">See who else we work with</Link>
           </p>
         </section>
       </main>

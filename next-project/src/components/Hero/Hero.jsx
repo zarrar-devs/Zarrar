@@ -15,37 +15,26 @@ import gsap from "gsap";
 import TransitionLink from "../TransitionLink"; 
 
 /**
- * Hero — v11
+ * Hero — v12
  *
- * What changed vs v10 (nav-only edit — see the v10 note below for
- * everything else, which is untouched):
- *  - "Contact" is gone from the nav. In its place: "Build For Me", a
- *    hover-opened dropdown styled after an awarded-site menu pattern
- *    (numbered rows, serif label, arrow-in on row hover) — reference:
- *    a full-screen agency menu where hovering a top-level item slides
- *    out a list of sub-options beside it. Scaled down here into a
- *    small panel anchored under the nav instead of a full-screen
- *    takeover, since only the nav was in scope for this pass.
- *  - The dropdown's five rows (Speakers / Real Estate / Authors /
- *    Coaches / Entrepreneurs) fade+lift in with a GSAP stagger built
- *    once and played/reversed on open/close — same "build a paused
- *    timeline, play() / reverse() it" approach the rest of this file
- *    already uses (see the pupil quickTo / magnetic-pull effects), so
- *    this doesn't introduce a new animation pattern to the codebase.
- *  - navLinksRef still holds exactly two elements (Services, then the
- *    new dropdown trigger) — same shape as v10's [Services, Contact],
- *    so the existing entrance timeline and magnetic-pull effect below
- *    needed zero changes; they just animate whatever's in the array.
- *  - .hero__nav's z-index went from 1 to 20 so the dropdown panel
- *    (which lives inside the nav's own stacking context) always
- *    renders above .hero__stage's content instead of being covered by
- *    it — those two elements previously shared z-index:1, which is
- *    fine with no popover but wasn't going to stay fine with one.
+ * What changed vs v11 (COPY + SEO only — design, layout, fonts and
+ * every animation are untouched):
+ *  - Headline rewritten so a first-time visitor understands what the
+ *    studio does and why it matters. The old lines ("Interfaces worth
+ *    staying on. / Inboxes worth opening.") were clever but said nothing
+ *    about the offer. The new lines keep the same two-line rhythm and
+ *    the same boxed first words, so the look is identical.
+ *  - Sub-copy now says plainly what ZARRAR is and lists the services,
+ *    which is also the keyword-bearing text search engines read first.
+ *  - "Build For Me" trigger → "Who We Serve", and each dropdown row now
+ *    uses descriptive anchor text ("Websites for Speakers" instead of
+ *    "For Speakers") — clearer for people, better internal-link text
+ *    for search engines. Routes (href) are unchanged.
+ *  - aria-controls / id added to the dropdown trigger + panel.
  *
- * (v10's own note, still true: nothing about layout logic changed —
- * .hero keeps its own overflow:hidden and box-sizing:border-box, so
- * this component was already containing its own content and still
- * does.)
+ * Page <title>, meta description and social tags can NOT live in this
+ * file (it's a client component) — set them via `export const metadata`
+ * in your layout.js / page.js.
  *
  * What did NOT change: ScrambleHeadline's width-lock-after-fonts-ready
  * and text-content-keyed setup effect are the fix for a real bug (see
@@ -94,24 +83,35 @@ const bodyFont = Space_Grotesk({
   display: "swap",
 });
 
+// Says what the studio is + the four services in plain words. Keep it
+// to roughly 2–3 lines at this width (the paragraph is max 46ch wide).
 const SUB_COPY =
-  "A design studio building websites, email systems, and identities for brands that don't blend in.";
+  "A web design and digital marketing studio. We build websites, lead generation systems, email campaigns, and branding that bring you customers.";
 
 // Stable reference on purpose — see ScrambleHeadline's setup effect for
 // why. Never inline this array literal directly into <ScrambleHeadline lines={...}/>.
-const HEADLINE_LINES = ["Interfaces worth staying on.", "Inboxes worth opening."];
+//
+// The FIRST word of each line gets the boxed "stamp" treatment (solid
+// on line one, outline on line two) — so "Websites" and "Emails" are
+// the two boxed words now, same as "Interfaces" and "Inboxes" were.
+const HEADLINE_LINES = ["Websites that win customers.", "Emails that bring them back."];
 
 // Stable reference for the same reason as HEADLINE_LINES above — this
 // feeds the dropdown's GSAP stagger via dropdownItemsRef, and a fresh
 // array literal on every render would be a footgun there too even
 // though nothing here currently re-keys off it by identity.
+//
+// Labels are descriptive on purpose (anchor text is an SEO signal, and
+// "For Speakers" alone doesn't say what you build). hrefs unchanged.
 const BUILD_FOR_OPTIONS = [
-  { label: "For Speakers", href: "/speakers" },
-  { label: "For Real Estate", href: "/real-estate" },
-  { label: "For Authors / Writers", href: "/authors" },
-  { label: "For Coaches", href: "/coaches" },
-  { label: "For Entrepreneurs / CEOs", href: "/entrepreneurs" },
+  { label: "Websites for Speakers", href: "/speakers" },
+  { label: "Websites for Real Estate", href: "/real-estate" },
+  { label: "Websites for Authors", href: "/authors" },
+  { label: "Websites for Coaches", href: "/coaches" },
+  { label: "Websites for Entrepreneurs", href: "/entrepreneurs" },
 ];
+
+const DROPDOWN_ID = "who-we-serve-menu";
 
 const Hero = forwardRef(function Hero({ revealed = true }, ref) {
   const navMarkRef = useRef(null);
@@ -122,7 +122,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
   const pupilRefs = useRef([]);
   const edgeTagRef = useRef(null);
 
-  // Build-For-Me dropdown — open state drives aria-expanded (for the
+  // Who-We-Serve dropdown — open state drives aria-expanded (for the
   // icon rotation + screen readers); the actual show/hide animation
   // runs off dropdownTlRef, not off React re-renders, so toggling this
   // never causes a layout thrash.
@@ -355,7 +355,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
     return () => cleanups.forEach((fn) => fn());
   }, []);
 
-  // Build-For-Me dropdown entrance — a paused timeline built once
+  // Dropdown entrance — a paused timeline built once
   // (panel scales/fades in from its top-right corner, rows fade+lift
   // in after it with a short stagger), then played forward on open and
   // reversed on close. useLayoutEffect (not useEffect) so the panel is
@@ -516,7 +516,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           position: relative;
           /* Raised from 1 → 20: this stacking context now needs to sit
              above .hero__stage (also z-index:1 below), because the
-             Build-For-Me dropdown panel lives inside it and must not
+             dropdown panel lives inside it and must not
              be covered by the headline/stage content beneath it. */
           z-index: 20;
           flex: 0 0 auto;
@@ -536,11 +536,11 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           white-space: nowrap;
         }
 
-        /* Services / Build-For-Me — reuses the exact solid/outline
+        /* Services / Who-We-Serve — reuses the exact solid/outline
            invert device the headline's boxed words already use (see
-           .scramble-word--boxed below), just at nav scale. Build-For-Me
-           gets the solid fill since it's the one action worth making
-           bold; Services stays outline. clamp() keeps both legible
+           .scramble-word--boxed below), just at nav scale. The dropdown
+           trigger gets the solid fill since it's the one action worth
+           making bold; Services stays outline. clamp() keeps both legible
            and non-wrapping down to narrow phones without needing a
            separate mobile layout. */
         .hero__links {
@@ -598,7 +598,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
           }
         }
 
-        /* Build-For-Me dropdown — same stamp-block trigger as Services,
+        /* Who-We-Serve dropdown — same stamp-block trigger as Services,
            opening a small numbered panel on hover (desktop) or tap
            (touch/keyboard). Styled after an awarded agency-site menu:
            faint index numerals, an italic serif label doing the actual
@@ -945,7 +945,7 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
       `}</style>
 
       <header className="hero__nav">
-        <Link href="/" className="hero__mark" ref={navMarkRef} aria-label="Zarrar — home">
+        <Link href="/" className="hero__mark" ref={navMarkRef} aria-label="ZARRAR — home">
           ZARRAR
         </Link>
         <nav className="hero__links" aria-label="Primary">
@@ -969,16 +969,21 @@ const Hero = forwardRef(function Hero({ revealed = true }, ref) {
               ref={(el) => (navLinksRef.current[1] = el)}
               aria-haspopup="true"
               aria-expanded={dropdownOpen}
+              aria-controls={DROPDOWN_ID}
               onClick={toggleDropdown}
             >
-              Build For Me
+              Who We Serve
               <span className="hero__dropdown-icon" aria-hidden="true">
                 <span />
                 <span />
               </span>
             </button>
 
-            <div className="hero__dropdown-panel" ref={dropdownPanelRef}>
+            <div
+              className="hero__dropdown-panel"
+              id={DROPDOWN_ID}
+              ref={dropdownPanelRef}
+            >
               <ul className="hero__dropdown-list">
                 {BUILD_FOR_OPTIONS.map((opt, i) => (
                   <li
@@ -1068,6 +1073,10 @@ const INTRO_STAGGER_MS = 22; // ms between each letter starting its on-load deco
  * Words at index 0 of each line get the "boxed" treatment (see
  * .scramble-word--boxed) — line 0 filled, line 1 outlined — everything
  * else stays a plain word in the italic serif.
+ *
+ * The visible letters are aria-hidden; the real, clean sentence is
+ * rendered once in an .sr-only span at the bottom, which is what screen
+ * readers (and any crawler reading the DOM text mid-decode) get.
  *
  * IMPORTANT — `lines` should be a STABLE reference (defined outside the
  * component, or memoized by the caller). See this component's setup
